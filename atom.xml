@@ -5,9 +5,9 @@
   
   <link href="/atom.xml" rel="self"/>
   
-  <link href="http://yoursite.com/"/>
+  <link href="https://blooog.top/"/>
   <updated>2020-07-04T16:17:48.958Z</updated>
-  <id>http://yoursite.com/</id>
+  <id>https://blooog.top/</id>
   
   <author>
     <name>周某某</name>
@@ -18,8 +18,8 @@
   
   <entry>
     <title>Hello World</title>
-    <link href="http://yoursite.com/2020/07/05/hello-world/"/>
-    <id>http://yoursite.com/2020/07/05/hello-world/</id>
+    <link href="https://blooog.top/2020/07/05/hello-world/"/>
+    <id>https://blooog.top/2020/07/05/hello-world/</id>
     <published>2020-07-04T16:17:48.958Z</published>
     <updated>2020-07-04T16:17:48.958Z</updated>
     
