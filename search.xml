@@ -110,6 +110,9 @@
 <h2 id="写在最后"><a href="#写在最后" class="headerlink" title="# 写在最后"></a># 写在最后</h2><p>到这里，算是用最直白的话把我理解的Spring IOC和使用方式写出来了，因为本人水平限制，这篇文章一定还有纰漏，希望看官能够指点一下。</p>
 <p>因为都是用大白话讲解的，所以涉及的知识难免比较浅薄，目的只是为了帮助初学Spring的同学尽快的了解Spring，具体的深入还是需要大家多多实践。</p>
 ]]></content>
+      <categories>
+        <category>Spring</category>
+      </categories>
       <tags>
         <tag>Spring</tag>
         <tag>IOC</tag>
