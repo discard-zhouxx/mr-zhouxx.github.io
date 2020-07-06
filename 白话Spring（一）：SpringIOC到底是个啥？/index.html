@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Spring,SpringBoot,Java,JVM,周某某" />
+   
+  <meta name="description" content="周某某的个人博客，记录Spring、Spring Boot、Java特性等知识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    白话Spring（一）：SpringIOC到底是个啥？ |  BloooG
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+
+<link rel="alternate" href="/atom.xml" title="BloooG" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-白话Spring（一）：SpringIOC到底是个啥？"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  白话Spring（一）：SpringIOC到底是个啥？
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/%E7%99%BD%E8%AF%9DSpring%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringIOC%E5%88%B0%E5%BA%95%E6%98%AF%E4%B8%AA%E5%95%A5%EF%BC%9F/" class="article-date">
+  <time datetime="2020-07-06T14:54:46.000Z" itemprop="datePublished">2020-07-06</time>
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.8k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">13 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><strong>Intro:</strong> 学习过Spring框架的人一定都听过Spring的IoC(控制反转) 、DI(依赖注入)这两个概念，对于初学Spring的人来说，这两个概念还是比较难懂的，所以博主就用大白话的给初学者讲一下这两个概念。</p>
+<a id="more"></a>
+
+<p>开门见山，我们先来一个没有IOC的程序例子：</p>
+<p>Dao层代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoImpl</span> <span class="keyword">implements</span> <span class="title">UserDao</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">selectUserFrominfo</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">    	<span class="comment">//操作数据库代码</span></span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Service层代码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    UserDao userDao;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserService</span><span class="params">(UserDao userDao)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.UserDao = userDao;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userDao.selectUserFrominfo(user);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Controller层代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span></span>&#123;</span><br><span class="line">    UserServiceimpl userService;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserController</span><span class="params">(UserService userService)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.userService = UserService;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> ModelAndView <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userService.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>main方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    UserController userController;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(Stringp[] args)</span></span>&#123;</span><br><span class="line">        UserDAO dao = <span class="keyword">new</span> UserDAO();</span><br><span class="line">        UserService service = <span class="keyword">new</span> UserService(dao);</span><br><span class="line">        UserController controller = <span class="keyword">new</span> UserController(service);</span><br><span class="line">        controller.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>可能有的同学要问，这不是挺好的吗？new一下可以实例化，也没浪费多大功夫嘛。</p>
+<p>在此回答此问题之前，我们需要了解一个软件工程上的知识点：</p>
+<p><strong>耦合度：</strong> 程序之间的依赖关系。我们可以通俗的讲依赖关系就是没有你，我办不成事。人越独立越好，模块也不例外，但是人又不可能完全独立于社会，就像模块不可能完全脱离系统，而消除这种依赖关系的过程就是解耦。</p>
+<p>再来看上面的代码，有哪些弊端呢？</p>
+<ol>
+<li>创建繁琐，每一层我们都需要创建下一层的对象，这个我们能忍，毕竟我们是勤劳勇敢的中国人民，麻烦点不算什么，下面的就不好搞了。</li>
+<li>违反面向接口编程的原则，每一层都直接new一个对象，后期更换接口需要工作量爆表。</li>
+<li>在这一串调用链中，上层知道下层是如何创建的，上层还需要自己动手创建下层。就好比没有人力资源管理的公司，任何人事的调动都需要该职员的上司进行处理，上下层的耦合性飙升。</li>
+<li>开发人员不能专心编写业务逻辑，编写业务逻辑代码时还需要自己连接数据库+自己创建Dao+记住数据库密码。</li>
+</ol>
+<p>如果使用IOC呢？彻底推翻上述的所有弊端，唯一的缺点就是增加那么一丢丢的学习成本，以及添加那么”亿”丢丢的配置文件。当然这两个缺点第一个是值得的，第二个则被SpringBoot给摆平了。</p>
+<p>简单了解IOC有什么用之后，我们再来看IOC到底什么意思。</p>
+<p><strong>IOC——控制反转：</strong>有反就有正，所谓的正就是我们在程序中new一个对象出来，我们就开始控制这个对象的生命周期，反转之后呢？<del>这个对象开始控制我们的生命周期</del>（删）我们将对象生命控制权交给Spring，由Spring给我们new对象出来。Spring在这个过程中扮演的就是一个人力资源管理部门的角色，作为大老板的我们应该将精力放到业务逻辑上。 而这些被管理的职员，我们通常称之为Bean。Bean又是什么呢？为什么名字这么奇怪？</p>
+<p>Bean这个词并非起源于Spring，只是最近二十年开发者大多都是从Spring中接触到Bean这一名词，Bean的起源年代久远，当初Java还抱着幻想反攻桌面端，但是被微软的VB打的满地找牙。当时微软大推模块化，在IDE中通过拖拽就可以给界面添加各种组件。Java开源社区急了，这种好东西我们也要有，于是大家商量着整出一套规范——JavaBean。通过这个规范就可以让IDE根据反射快速的构建界面，然而没人买账……现在回答Java Bean是什么？Java Bean是一种规范，而Bean就是遵从这个规范的类。你要是问为什么叫Bean而不叫其他什么，那就只能说Java Bean合在一起叫做咖啡豆，起这个名字的人觉得好玩。</p>
+<p><strong>Java Bean规范了什么？</strong> 上面说了JavaBean是一种规范，那么规范了什么呢？主要规范了以下四点：</p>
+<ol>
+<li><p>所有属性使用private</p>
+</li>
+<li><p>给private标记的属性添加getter/setter方法</p>
+</li>
+<li><p>实现序列化</p>
+</li>
+<li><p>具有默认的构造函数（无参的构造函数） </p>
+</li>
+</ol>
+<p>控制反转和我们平常使用的Maven很像，没有Maven的时候，我们需要将所需的依赖包一个个下载好，放到lib文件夹中。有了Maven之后，我们只需要在配置文件中配置上该App所需的所有依赖包，是不是很方便？假如我们需要更换依赖版本，只需要在pom.xml文件中修改版本号，Maven就会自动给我们导入依赖包。相对应的，我们需要更改某一接口的实现类的时候只需要修改注释/配置文件就可以了。</p>
+<p>那么怎么告诉Spring这些依赖关系呢？我们可以通过注释或者xml配置文件的方式。</p>
+<p><strong>注解方式的IOC：</strong>IOC相关的注解很多，但是总体可以分为两类组件注册和组件加载。</p>
+<p>组件注册注解是由@Component注解及其一堆小弟组成的，像业务层的@Service、控制层的@Controller、数据操作层的@Repository。这些小弟可以被@Component代替，但是还是推荐层次更明确的小弟注解。这些注解的作用是告诉Spring哪些类需要你控制，Spring把这些类变成Bean实例，这些实例的名字使用变量类似的驼峰命名法，也就是将类的首字母变为小写，其他不变。注册Bean的过程也就是告诉人力资源部门哪些人是我们公司的职员。当然Spring不知道从哪里找这些组件，你需要在配置文件中配置Spring扫描哪些包。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- </span></span><br><span class="line"><span class="comment">	首先通过context命名空间引入component-scan配置</span></span><br><span class="line"><span class="comment">	component： 组件</span></span><br><span class="line"><span class="comment">	scan： 扫描</span></span><br><span class="line"><span class="comment">--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"org.exmples.*"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样Spring道了哪些包中的组件需要自己管理，又知道这些包中的类需要注册为什么类型。但是这些组件注册之后安排到什么岗位呢？那么就要用到组件加载相关的注解了。</p>
+<p>组件加载常用的有@Autowired，@Resource、@Qualifier。@Autowired是Spring中主要使用的注解，它可以通过成员变量/成员变量的setter方法/构造函数将依赖注入。这三个注解有什么区别呢？@Autowired和@Qualifier是Spring中自带的，而@Resource则是在javax.annotation包中。另外@Resource默认是通过名称加载，如果名字找不到，那么就通过类型注入。@Autowired则仅支持通过类型加载的，@Autowired可以和@Qualifier结合使用，可以通过类型和名称双限定加载。至于@Qualifier注解，它一般不单独使用。</p>
+<p>我们常用的方式就是@Autowired注解，所以@Resource注解的方式不再演示了。</p>
+<p>示例如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span>(<span class="string">"dependency"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="comment">//balabala</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">calss Exmple&#123;</span><br><span class="line">    <span class="comment">//通过成员变量注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@Qualifier</span>(<span class="string">"dependency"</span>)</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过构造方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Exmple</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过setter方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">      	<span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上三种注入方法，选择其一即可。这里提一句，不推荐使用成员变量直接注解的方式，而setter和构造方法各有优缺。下面聊聊这三种方式：</p>
+<p><strong>字段注入：</strong>又叫属性注入、field注入等等，这种方式代码简洁，编写方便，但是有很多缺点，缺点如下：</p>
+<ol>
+<li><p>在声明为 final 的字段上不可用，因为final修饰的关键字需要在类实例化的时候进行初始化，这种字段只能使用构造器注入。</p>
+</li>
+<li><p>与SpringIOC组件耦合，这种方式需要Spring通过反射将属性注入，除此之外没有任何办法（不嫌麻烦你可以使用反射，因为Spring也是这么干的）给这个属性赋值，在你进行单元测试的时候你还要呼叫Spring过来帮你初始化这个依赖，多麻烦呀。就好像你想找小a倒杯水，明明小a就在你隔壁，却还要让人力资源部门通知小a倒水。</p>
+</li>
+<li><p>隐藏依赖关系，字段注入的方式很简单，一个注解就搞定了。但是简单到让人忘记你到底有多少个依赖，让接手的人不知道哪个才是你的依赖。比如你在公司看到一个不干活的职员，你找人力资源部门说 “这小子哪个部门的？给我开了他！” 结果人力资源部门跟你说，这哥们送外卖的。 </p>
+</li>
+</ol>
+<p><strong>setter方法注入：</strong>这种方式有利有弊，我在小项目开发中一般使用这种方式，因为可以把setter方法藏到最后，代码看起来没那么臃肿。setter唯一的不足就是不能给final依赖注入，但是解决了字段注入的两个缺陷：</p>
+<ol>
+<li>解除SpringIOC组件的强耦合关系，依赖不仅可以使用Spring注入，也可以通过调用setter方法的方式注入依赖。 </li>
+<li>显示依赖关系，通过setter方法上的注释，我们可以知道这个类的依赖关系有哪些，哪些依赖关系需要Spring帮助我i们注入。</li>
+</ol>
+<p><strong>构造方法注入：</strong>这种注入依赖的方式是Spring官方指定推荐，也就是皇太子（虽然setter注入方式在Spring 3.x 中也是被推荐的那一位）。这种方式几乎没有任何缺点，唯一的缺点就是当你的依赖关系很多的时候，你的构造方法看起来不太美观。碰到这种情况，你就要考虑自己程序设计的是不是有问题了，是不是违背了单一职责原则（如果有机会就把设计原则讲一下，下次一定）呢？细数起来构造方法注入的方式优点如下：</p>
+<ol>
+<li>允许final关键字修饰的依赖注入，这个没得说，只有这位皇太子有这本事。</li>
+<li>依赖检查，重写了有参的构造函数，想实例化这个类就只能通过有参的构造函数完成初始化，万一有个依赖注入失败，那这个类就无法初始化。就好比开会的时候，Spring会告诉你某某某开会没来，这个会开不成，而不是像字段注入和setter方法注入中，让某某某干活了，某某某说我没开会（注入依赖） ，我空指针了。</li>
+</ol>
+<p>那么构造器注入的方式相较setter方法注入有什么不足呢？setter方法允许类构建之后重新注入。</p>
+<p><strong>总结来说：</strong> setter和构造方法各有优劣，每个都有自己不可替代的功能，相较于两位皇子来说，字段注入是不受宠的那个。在实际开发中还是推荐使用构造方法注入的方式。</p>
+<p><strong>XML配置文件的注入方式</strong> 讲完注解的方式注入依赖，来看一看开发环境中不是很常用的xml配置文件注入的的方式。XML有两种注入方式，构造器注入和setter方法注入，这两者的优劣类似于注解中两种方式的优劣。</p>
+<p>首先来看构造器注入的配置，写在applicationContext.xml中：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>依赖类Dependency：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Denpendency</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类Test：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Test</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>示例中展示了Spring如何创建一个dependency示例并将该实例注入Test中，首先是&lt;bean&gt;标签的讲解，bean标签常用的两个属性id和class，id指定了这个bean在Spring中唯一的标识符，其他bean可以通过id引用该bean，其实相当于java中的标识符（名字！够清楚了吧）。class则指定了这个bean对应的类，也就是告诉Spring哪个类需要注册为id=xxx的bean。这个bean又有哪些属性或者依赖呢？通过&lt;constructor-arg&gt;标签中的两个常用属性value和ref，其中value是没有在Spring中注册的属性（什么是注册请看前面两句刚写的&lt;bean&gt;标签讲解），例如数据库密码、数据库驱动url等等。ref则表示在Spring中注册过的依赖，引用该依赖的方式是ref=“id”。</p>
+<p>还是人力资源管理部门的例子，value是公司外的资源，例如隔壁老王送水电话，村头小张仓库地址，这些资源不属于公司内部，没有被人力资源管理部门所管理，但是又被某职工所需要，那么在职工入职（注册为Bean）的时候将这些信息传给这个职工。ref又是个怎么回事呢？ref是公司给你安排的小弟，类似于Controller层，作为高层怎么能没有小弟呢？在空降领导的时候总得带着领导见见小弟吧？ref就是这么回事，你告诉Spring这个领导需要哪些小弟，Spring带着这些小弟<del>注入</del>接见领导，当然这些小弟都需要在Spring中注册过了，不然你还是要用value的方式注入依赖。</p>
+<p>看完了XML配置+构造器方法注入之后，再来看XML+setter方法的注入方式。</p>
+<p>同样是applicationContext中：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>依赖类Dependency：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDate</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类Test：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>值得注意的是，与注解的方式不同，在类中必须有setter方法，否则Spring会报错。至于value和ref什么意思，刚讲过就忘啦？？？？</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="# 写在最后"></a># 写在最后</h2><p>到这里，算是用最直白的话把我理解的Spring IOC和使用方式写出来了，因为本人水平限制，这篇文章一定还有纰漏，希望看官能够指点一下。</p>
+<p>因为都是用大白话讲解的，所以涉及的知识难免比较浅薄，目的只是为了帮助初学Spring的同学尽快的了解Spring，具体的深入还是需要大家多多实践。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reward-btn">
+        打赏
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/%E7%99%BD%E8%AF%9DSpring%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringIOC%E5%88%B0%E5%BA%95%E6%98%AF%E4%B8%AA%E5%95%A5%EF%BC%9F/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/IOC/" rel="tag">IOC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spring/" rel="tag">Spring</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "cyVYcYwwMQ4bKvMVsB4BzGCr-gzGzoHsz",
+    app_key: "WKskGv5QXUjcz6AM5KTqog7v",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "不说两句吗~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2020
+         周某某
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="BloooG"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+    
+    <div id="music">
+    
+    
+    
+    <iframe frameborder="no" border="1" marginwidth="0" marginheight="0" width="200" height="86"
+        src="//music.163.com/outchain/player?type=2&id=1330348068&auto=0&height=66"></iframe>
+</div>
+
+<style>
+    #music {
+        position: fixed;
+        right: 15px;
+        bottom: 0;
+        z-index: 998;
+    }
+</style>
+    
+  </div>
+</body>
+
+</html>
