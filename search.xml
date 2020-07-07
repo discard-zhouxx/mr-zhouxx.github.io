@@ -139,21 +139,20 @@
 <p>SB：阿这……因为我毕竟是Spring的一种实现方式，这么简单的我，取代Spring是迟早的事，但是单独一个我并不能做什么惊天动地的大事，只有联合我的Spring全家桶中的兄弟姐妹才能在JavaEE圈中称王称霸，毕竟我在Spring生态圈中人缘最好，和第三方框架关系也不错！至于Spring那个老东西，不会还有公司在用吧？不会吧？不会吧？</p>
 <p>记者（面向博主）：博主，你被公司开除了。</p>
 <p>博主：现在我来总结一下，SpringBoot是Spring的一个变种，其实本质上还是Spring那一套，它可以做到一站式开发，在开发前简化项目依赖，开发过程中简化配置，开发完成后简化部署。不仅能够和Spring全家桶完美契合，还能和主流第三方框架进行整合。乐观地说，SpringBoot取代Spring只是时间问题，然而，SpringBoot使用了大量的Spring提供的API，如果不学习Spring的话，SpringBoot也就只能停留在比较浅的层面。</p>
-<h2 id="整一个HelloWorld"><a href="#整一个HelloWorld" class="headerlink" title="整一个HelloWorld"></a>整一个HelloWorld</h2><p>程序员的老规矩，接触新技术先整Helloworld。博主使用的是Idea（别问博主是不是盗版了，学生可以白嫖！！），步骤会一步一步的贴出来，还搞不定的话……放张图与君共勉。<img src="/.top//20200627110835.png" alt="20200627110835"></p>
+<h2 id="整一个HelloWorld"><a href="#整一个HelloWorld" class="headerlink" title="整一个HelloWorld"></a>整一个HelloWorld</h2><p>程序员的老规矩，接触新技术先整Helloworld。博主使用的是Idea（别问博主是不是盗版了，学生可以白嫖！！），步骤会一步一步的贴出来，还搞不定的话……放张图与君共勉。<img src="https://gitee.com/vanbyz/images/raw/master/img/20200627110835.png" alt="20200627110835"></p>
 <p>永远有比我们更惨的人，他都能坚持下去，为什么我们不可以呢？</p>
 <p>首先开始第一步，打开我们的idea，创建一个Maven新项目（2020了，不会还有人不知道怎么创建Maven新项目吧？不会吧？）</p>
-<p><img src="/.top//image-20200627112301999.png" alt="image-20200627112301999"></p>
-<p><img src="/.top//image-20200627112538113.png" alt="image-20200627112538113"></p>
-<p><img src="/.top//image-20200627112758857.png" alt="image-20200627112758857"></p>
-<p>ok，现在项目创建好了。既然是Maven项目，那么肯定要配置pom.xml文件啦。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112301999.png" alt="image-20200627112301999"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112538113.png" alt="image-20200627112538113"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112758857.png" alt="image-20200627112758857">    ok，现在项目创建好了。既然是Maven项目，那么肯定要配置pom.xml文件啦。</p>
 <p>打开SpringBoot官网提供了快速开始的配置，那是相当方便啊。知道你们懒，我直接贴在下面。</p>
 <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">parent</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.1.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
 
 <p>相比SSM框架中导入一大堆依赖来说是不是简单很多？</p>
 <p>在main目录下，我们建以下结构，包名自己取，但是欢迎照抄嘿嘿嘿。</p>
-<p><img src="/.top//image-20200627142632994.png" alt="image-20200627142632994"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627142632994.png" alt="image-20200627142632994"></p>
 <p>然后再根据下面的结构创建两个类，根包下的类命名需要注意一下，需要写成${项目名}Application：</p>
-<p><img src="/.top//image-20200627143809642.png" alt="image-20200627143809642"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627143809642.png" alt="image-20200627143809642"></p>
 <p>在SpringBootDemoApplication类中：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> top.blooog;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringBootDemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootDemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -163,9 +162,9 @@
 <p>这里有小朋友要问了，是不是该配置Tomcat了？SpringBoot不屑一笑，你懂什么叫做可运行吗？</p>
 <p>直接运行SpringBootDemoApplication。</p>
 <p>看到控制台显示如下：</p>
-<p><img src="/.top//image-20200627145252013.png" alt="image-20200627145252013"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145252013.png" alt="image-20200627145252013"></p>
 <p>这一行中出现了熟悉的字眼——Tomcat，原来SpringBoot自带了一个Tomcat！现在我们去浏览器看一下效果。</p>
-<p><img src="/.top//image-20200627145442925.png" alt="image-20200627145442925"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145442925.png" alt="image-20200627145442925"></p>
 <p>不用一行配置文件，完成HelloWorld，请所有SSM框架的使用者们全体起立，现在这里是SpringBoot广场！开发狂喜，运维狂喜，前端流下羡慕的口水。</p>
 <p>HelloWorldController没什么说的，这是SpringMVC中的内容。</p>
 <p>值得我们注意的是SpringBootDemoApplication，该类使用了一个叫做@SpringBootApplication的注解，这个注解告诉SpringBoot，这是主配置类。那么@SpringBootApplication是什么呢？</p>
@@ -187,16 +186,16 @@
 </ol>
 <p>这里仅展示第三种方式，因为我很懒，展示三种实在太难为我了。</p>
 <p>首先打开我们的Idea，创建一个新项目。</p>
-<p><img src="/.top//image-20200627185206771.png" alt="image-20200627185206771"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185206771.png" alt="image-20200627185206771"></p>
 <p>然后关键的一步来了</p>
-<p><img src="/.top//image-20200627185419061.png" alt="image-20200627185419061"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185419061.png" alt="image-20200627185419061"></p>
 <p>弹出来一个奇奇怪怪的设置界面</p>
-<p><img src="/.top//image-20200627190820425.png" alt="image-20200627190820425"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190820425.png" alt="image-20200627190820425"></p>
 <p>小声bb：Group填自己的。我已经把上一个项目删掉了，所以我还是上一个项目的名字，你最好换一下。</p>
 <p>点击下一步后出现一个乱七八糟的界面，这个界面是选择场景启动器（场景启动器后面再说），先跟着我做</p>
-<p><img src="/.top//image-20200627190403890.png" alt="image-20200627190403890"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190403890.png" alt="image-20200627190403890"></p>
 <p>点击下一步之后到了Idea项目设置的界面，点击完成</p>
-<p><img src="/.top//image-20200627190441384.png" alt="image-20200627190441384"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190441384.png" alt="image-20200627190441384"></p>
 <p>进去之后你会非常惊喜的发现，所有东西都已经配置完成了，只需要创建一个HelloWorldController就可以了，具体的操作我就不再演示了。</p>
 <p>上述出现一个新名词叫场景启动器，什么是场景启动器呢？就是SpringBoot将某一场景中所需要用到的依赖打包，例如，我们需要web开发就会在依赖中添加一个叫做spring-boot-starter-web的场景启动器，如果需要测试呢？那么就添加对应的spring-boot-starter-test场景启动器。诸如此类的场景启动器还有很多，不仅有SpringBoot官方的启动器，很多第三方的应用或框架也提供了场景启动器，例如常用的mybatis框架也有SpringBoot的启动器。这些启动器除了打包一堆依赖之外，还添加了一些让人惊喜的小工具，比如web场景启动器内嵌了一个Servlet容器，可以让我们不用再部署到Tomcat。</p>
 <h2 id="SpringBoot的配置"><a href="#SpringBoot的配置" class="headerlink" title="SpringBoot的配置"></a>SpringBoot的配置</h2><p>上面讲了SpringBoot开发的到底有多方便，那么问题来了，我该怎么配置SpringBoot呢？比如我要配置Tomcat的监听端口号，总不能让我修改SpringBoot的源码把8080改成80吧？难道还是老样子用xml配置文件？SpringBoot可是说了零xml配置文件。于是SpringBoot默认使用properties文件配置SpringBoot，并且引入了另一种配置文件yml（迷惑行为）。使用这两种全局配置文件来取代SpringBoot中默认的配置。</p>
@@ -273,10 +272,10 @@
 <p>可以开始运行了！</p>
 <p>还是用我们的HelloWorld类测试运行（也可以使用测试类进行测试。）</p>
 <p>编辑HelloWorld类：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> Cat cat;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//为什么这样写可以看我的另一篇博客，白话Spring（一）</span></span><br><span class="line">    <span class="comment">//如果Bean有构造函数，那么可以省略@AutoWired : If a bean has one constructor, you can omit the @Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Cat cat)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cat = cat;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> cat.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> Cat cat;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//为什么这样写可以看我的另一篇博客，白话Spring（一）</span></span><br><span class="line">    <span class="comment">//如果Bean有构造函数，那么可以省略@AutoWired : If a bean has one constructor, you can omit the @Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Cat cat)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cat = cat;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> cat.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>运行结果如下：</p>
-<p><img src="/.top//image-20200628202503398.png" alt="image-20200628202503398"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
 <h3 id="读取非全局配置文件到Java"><a href="#读取非全局配置文件到Java" class="headerlink" title="读取非全局配置文件到Java"></a>读取非全局配置文件到Java</h3><p>上面讲到怎么把application.yml配置文件读取到Java中，那如果我有很多配置文件呢？难道都要写进application中嘛？那全局配置文件得多臃肿，修改起来也不方便，所有我们需要将部分配置信息分离出一个单独的文件。</p>
 <p>SpringBoot中提供了一个@PropertySource注解，我们先看看这个注解都有什么东西</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Target</span>(&#123;ElementType.TYPE&#125;)</span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Repeatable</span>(PropertySources<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class"><span class="title">public</span> @<span class="title">interface</span> <span class="title">PropertySource</span> </span>&#123;</span><br><span class="line">    <span class="function">String <span class="title">name</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    String[] value();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">ignoreResourceNotFound</span><span class="params">()</span> <span class="keyword">default</span> <span class="keyword">false</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">String <span class="title">encoding</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    Class&lt;? extends PropertySourceFactory&gt; factory() <span class="keyword">default</span> PropertySourceFactory<span class="class">.<span class="keyword">class</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -293,7 +292,7 @@
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@PropertySource</span>(value = &#123;<span class="string">"classpath:cat.yml"</span>&#125;)</span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(<span class="string">"cat"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,String&gt; friends;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 
 <p>刷新界面，仍旧可以读取。</p>
-<p><img src="/.top//image-20200628202503398.png" alt="image-20200628202503398"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
 <h3 id="SpringBoot多环境下的配置"><a href="#SpringBoot多环境下的配置" class="headerlink" title="SpringBoot多环境下的配置"></a>SpringBoot多环境下的配置</h3><p>上面我说到SpringBoot和我们约定好了一起把全局配置写到名为application文件中，我也提到了可以使用别的名字。那么什么时候我们需要使用别的名字呢？也就是SpringBoot运行环境不同的时候，我们需要不同的配置文件来配置SpringBoot，比如开发环境通常端口号是8080、生产环境端口号看老大心情。我们总不能每次换一个环境就把全局配置文件进行修改吧？估计改个几次配置文件就面目全非，找不到头尾。SpringBoot也不是那么死板的只读取application文件，多一个字少一个字都不行。</p>
 <p>SpringBoot允许我们添加多个命名为application-{环境名}.yml的application配置文件。</p>
 <p>例如：开发环境可以命名为：application-dev.yml或者application-dev.properties；生产环境可以命名为：application-proc.yml；测试环境可以命名为：application-test.yml</p>
@@ -311,7 +310,7 @@
 <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">8080</span></span><br></pre></td></tr></table></figure>
 
 <p>现在直接运行，SpringBoot会使用不带后缀的配置文件来配置SpringBoot。</p>
-<p><img src="/.top//image-20200629115552251.png" alt="image-20200629115552251"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629115552251.png" alt="image-20200629115552251"></p>
 <p>可以看到端口号是application.yml中所配置的端口号。</p>
 <p>怎么告诉SpringBoot本次运行需要使用哪个配置文件呢？有以下几种方式：</p>
 <ol>
@@ -320,28 +319,29 @@
  <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">8080</span></span><br><span class="line">  </span><br><span class="line">spring:</span><br><span class="line">  profiles:</span><br><span class="line">    active: dev</span><br></pre></td></tr></table></figure>
 
 <p> 这里指定了使用后缀名为dev的配置文件，运行后结果：</p>
-<p> <img src="/.top//image-20200629120126819.png" alt="image-20200629120126819"></p>
-<p> 也就是SpringBoot会先去application.yml中看spring.profiles.active是否配置了另一个全局配置文件，如果配置了，就只使用相应后缀的配置文件。</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629120126819.png" alt="image-20200629120126819"></p>
 </li>
+</ol>
+<pre><code>也就是SpringBoot会先去application.yml中看spring.profiles.active是否配置了另一个全局配置文件，如果配置了，就只使用相应后缀的配置文件。</code></pre><ol start="2">
 <li><p>命令行模式：</p>
 <p> 运行时直接加在运行jar包命令的后面 –spring.profiles.active=proc，这种方式牵扯到SpringBoot的打包和运行，不过我们在IDEA中也可以使用增加选项的方式来测试。</p>
-<p> <img src="/.top//image-20200629121313373.png" alt="image-20200629121313373"></p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png" alt="image-20200629121313373"></p>
 <p> 在配置环境中添加–spring.profiles.active=proc（意思为生产环境）</p>
-<p> <img src="/.top//image-20200629121913696.png" alt="image-20200629121913696"></p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121913696.png" alt="image-20200629121913696"></p>
 <p> 运行之后结果：</p>
-<p> <img src="/.top//image-20200629122015786.png" alt="image-20200629122015786"></p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
 <p> 等等？我们在application.yml中配置了使用dev后缀的配置文件，命令行配置了proc后缀的配置文件，然而现在SpringBoot使用了proc的配置，OK，命令行方式会覆盖application中的配置。</p>
 </li>
 <li><p>虚拟机参数：</p>
 </li>
 </ol>
-<pre><code>![image-20200629121313373](image-20200629121313373.png)
+<pre><code>![image-20200629121313373](https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png)
 
-在vm选项中添加-Dspring.profiles.active=test</code></pre><p><img src="/.top//image-20200629122816187.png" alt="image-20200629122816187"></p>
+在vm选项中添加-Dspring.profiles.active=test</code></pre><p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122816187.png" alt="image-20200629122816187"></p>
 <p>运行之后：</p>
-<p><img src="/.top//image-20200629122015786.png" alt="image-20200629122015786"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
 <p>嗯？怎么还是proc的端口？命令行选项没有删除，也就是命令行优先级高于虚拟机配置，把命令行选项删除，再次运行。</p>
-<p><img src="/.top//image-20200629123135251.png" alt="image-20200629123135251"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629123135251.png" alt="image-20200629123135251"></p>
 <p>这个就是test的端口号了，但是别忘了application.yml中的配置文件从来都没有删除过spring.profiles.active=dev这个配置项。</p>
 <p>所以这三种配置的优先级是：命令行选项 &gt; 虚拟机选项 &gt; application中配置</p>
 <h2 id="SpringBoot注册组件"><a href="#SpringBoot注册组件" class="headerlink" title="SpringBoot注册组件"></a>SpringBoot注册组件</h2><p>SpringBoot虽然可以使用@ImportRecourse注解导入Spring的xml配置文件（也就是创建Bean），但是SpringBoot不推荐这种办法，而是使用配置类来添加组件。</p>
@@ -355,9 +355,9 @@
 
 <p>运行后结果如下：</p>
 <p>控制台：</p>
-<p><img src="/.top//image-20200629101604813.png" alt="image-20200629101604813"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101604813.png" alt="image-20200629101604813"></p>
 <p>浏览器：</p>
-<p><img src="/.top//image-20200629101623161.png" alt="image-20200629101623161"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101623161.png" alt="image-20200629101623161"></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>终于写完了……不算图一共五千字（废话有三千字），不知道有没有人能耐心看完……</p>
 <p>先来总结下知识点：</p>
 <ol>
