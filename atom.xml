@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://blooog.top/"/>
-  <updated>2020-07-07T06:25:30.574Z</updated>
+  <updated>2020-07-07T07:29:40.623Z</updated>
   <id>https://blooog.top/</id>
   
   <author>
@@ -15,6 +15,27 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>SpringBoot学习笔记（二）：自动配置原理</title>
+    <link href="https://blooog.top/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE%E5%8E%9F%E7%90%86/"/>
+    <id>https://blooog.top/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE%E5%8E%9F%E7%90%86/</id>
+    <published>2020-07-07T06:31:46.000Z</published>
+    <updated>2020-07-07T07:29:40.623Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;strong&gt;INTRO:&lt;/strong&gt;  上一篇博客讲解了SpringBoot的入门知识，了解到SpringBoot的精髓就是自动配置，自动配置的简便让SpringBoot在JavaEE领域大杀四方，学习SpringBoot自动配置的原理让我们知其所以然，博主写这篇博客就是为了让大家了解SpringBoot自动配置的原理。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="SpringBoot" scheme="https://blooog.top/categories/SpringBoot/"/>
+    
+    
+      <category term="SpringBoot" scheme="https://blooog.top/tags/SpringBoot/"/>
+    
+  </entry>
   
   <entry>
     <title>SpringBoot学习笔记（一）：SpringBoot入门</title>
