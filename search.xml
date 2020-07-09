@@ -3,7 +3,7 @@
   <entry>
     <title>白话Spring（一）：SpringIOC到底是个啥？</title>
     <url>/%E7%99%BD%E8%AF%9DSpring%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringIOC%E5%88%B0%E5%BA%95%E6%98%AF%E4%B8%AA%E5%95%A5%EF%BC%9F/</url>
-    <content><![CDATA[<p><strong>Intro:</strong> 学习过Spring框架的人一定都听过Spring的IoC(控制反转) 、DI(依赖注入)这两个概念，对于初学Spring的人来说，这两个概念还是比较难懂的，所以博主就用大白话的给初学者讲一下这两个概念。</p>
+    <content><![CDATA[<p><strong>INTRO:</strong> 学习过Spring框架的人一定都听过Spring的IoC(控制反转) 、DI(依赖注入)这两个概念，对于初学Spring的人来说，这两个概念还是比较难懂的，所以博主就用大白话的给初学者讲一下这两个概念。</p>
 <a id="more"></a>
 
 <p>开门见山，我们先来一个没有IOC的程序例子：</p>
@@ -121,9 +121,7 @@
   <entry>
     <title>SpringBoot学习笔记（一）：SpringBoot入门</title>
     <url>/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringBoot%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[<p>Spring Boot 可轻松创建一个基于Spring框架的、可运行的、独立的、生产级 Spring 应用程序。（完）</p>
-<p>没错，上面那句是我从官网上翻译的。</p>
-<p>SpringBoot究竟是何方神圣？Spring开发人员使用SpringBoot之后为何热泪盈眶？JavaEE生态圈为何对SpringBoot狂舔不止？这一切的原因究竟是Spring不够骚了，还是你SpringBoot有点飘了？接下来，欢迎收看我的SpringBoot学习笔记之SpringBoot入门，让我们一起走进SpringBoot的内心世界。</p>
+    <content><![CDATA[<p><strong>INTRO：</strong> SpringBoot究竟是何方神圣？Spring开发人员使用SpringBoot之后为何热泪盈眶？JavaEE生态圈为何对SpringBoot狂舔不止？这一切的原因究竟是Spring不够骚了，还是你SpringBoot有点飘了？接下来，欢迎收看我的SpringBoot学习笔记之SpringBoot入门，让我们一起走进SpringBoot的内心世界。</p>
 <a id="more"></a>
 
 <h2 id="SpringBoot简介"><a href="#SpringBoot简介" class="headerlink" title="SpringBoot简介"></a>SpringBoot简介</h2><p>记者：您好，SpringBoot，请问您可以简单介绍下自己吗？</p>
