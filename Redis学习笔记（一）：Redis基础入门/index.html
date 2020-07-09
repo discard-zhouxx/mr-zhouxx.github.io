@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Spring,SpringBoot,Java,JVM,周某某" />
+   
+  <meta name="description" content="周某某的个人博客，记录Spring、Spring Boot、Java特性等知识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    Redis学习笔记（一）：Redis基础入门 |  BloooG
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+
+<link rel="alternate" href="/atom.xml" title="BloooG" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Redis学习笔记（一）：Redis基础入门"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Redis学习笔记（一）：Redis基础入门
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/" class="article-date">
+  <time datetime="2020-07-09T01:17:59.000Z" itemprop="datePublished">2020-07-09</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Redis/">Redis</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.1k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">8 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><strong>INTRO：</strong> 在实际开发过程中，我们会经常用到Redis，作为一个高速缓存数据库，我们该从哪里开始学习呢？本文参考Redis文档作为大纲编写，从这篇博客开始开辟Redis这个高速公路。</p>
+<a id="more"></a>
+
+<h2 id="Redis是个啥？"><a href="#Redis是个啥？" class="headerlink" title="Redis是个啥？"></a>Redis是个啥？</h2><p>Redis本质上是一个以key-value存储的数据库。那么key-value数据库可太多了，我们为什么都用redis呢？</p>
+<p>因为Redis是一个内存数据库，并且支持数据持久化，这里解释一下数据持久化。</p>
+<p><strong>数据持久化：</strong>其实这个词学过数据库的都会知道什么意思，但是照顾下初学者（顺便凑凑字数）还是说一说。我们以前的程序都是在内存玩玩，包括我们第一个程序HelloWorld也好，各种排序算法也好，这些东西都是在内存中的。只要我们关闭程序或者计算机断电，所有的东西就都没了（参考老版本的Word文档）。那么我们的数据存在哪里才不会受到这种限制呢？那当然是硬盘啦！像Mysql、Oracle这种就是将数据存进硬盘中，那么问题来了，硬盘它读写速度慢啊！访问量一上去，读写速度直接成为系统瓶颈。于是有大佬想出一个办法，我把常用数据存在内存中不就行了吗？Redis就在这种背景下横空出世。</p>
+<p><strong>Redis的优势</strong>： 刚才讲到Redis的出生背景，可能有些人开始疑惑了，这不是开倒车吗？刚说完数据持久化，你就把数据放到内存了。万一服务器断电，数据不就没了？大佬毕竟是大佬，只要大佬高可用做的好，灾难就追不上大佬。Redis支持主从模式的数据备份，主挂了，我还有从呢！Redis支持数据持久化，可以把数据存进硬盘中，等到重启的时候再拿出来用。（大胆猜测下，向Redis写入数据时，Redis需要做三件事：存数据到主节点内存；同步数据到从节点；同步数据到硬盘。我们在学习过程中再看到底是不是这样。）</p>
+<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><p>入门第一步当然是先安装主角啦！进入<a href="https://redis.io/" target="_blank" rel="noopener">Redis官网</a>寻找Download关键字，看到Download相关的点进去就完事了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709100113889.png" alt="image-20200709100113889"></p>
+<p>点击一下，直接就下载了。默认时linux版本的gz文件，如果你想下载windows版本的可以在这里<a href="https://github.com/tporadowski/redis/releases" target="_blank" rel="noopener">gayhub</a>下载安装。我这里有一台Linux服务器，我就使用linux版本了。希望大家有条件的可以创建虚拟机来操作Linux。</p>
+<p>偷偷告诉大家一个小技巧，win10自带的Powershell可以直接使用ssh/scp来链接服务器或者上传文件。</p>
+<p>我这里使用的ssh工具是Termius，好用倒是没多好用，就是界面美观。scp就用Powershell了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709102039501.png" alt="image-20200709102039501"></p>
+<p>不得不说微软现在越来越开放了，像VS Code、Powershell等都支持跨平台了，我的青春结束了。</p>
+<p>来到服务器，在/root目录运行解压redis安装包</p>
+<blockquote>
+<p>tar -zxvf  redis-6.0.5.tar.gz</p>
+</blockquote>
+<p>进入目录并且编译</p>
+<blockquote>
+<p>cd redis-6.0.5/ &amp;&amp; make</p>
+</blockquote>
+<p>如果编译期间报错，那么就是你的gcc版本出现问题，两种解决方案：升级gcc；使用更低的Redis版本；</p>
+<p>*注意！生产环境中不可擅自升级gcc，凡事先问运维可不可以升级！</p>
+<p>我这里选择升级gcc，按顺序运行这些命令，然后</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">yum install -y cpp</span><br><span class="line">yum install -y binutils</span><br><span class="line">yum install -y glibc</span><br><span class="line">yum install -y glibc-kernheaders</span><br><span class="line">yum install -y glibc-common</span><br><span class="line">yum install -y glibc-devel</span><br><span class="line">yum install -y gcc</span><br><span class="line">yum install -y make</span><br><span class="line"></span><br><span class="line">yum -y install centos-release-scl</span><br><span class="line">yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils</span><br><span class="line">scl enable devtoolset-9 bash</span><br><span class="line"></span><br><span class="line">echo "source /opt/rh/devtoolset-9/enable" &gt;&gt;/etc/profile</span><br></pre></td></tr></table></figure>
+
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-server</p>
+</blockquote>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709111549533.png" alt="image-20200709111549533"></p>
+<p>出现这个就说明Redis的server端启动起来了，可以通过redis内置的一个客户端与服务端进行交互。</p>
+<p>因为这个被占用了，另开一个ssh链接。</p>
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-cli</p>
+</blockquote>
+<p>这个时候进入了redis命令行模式，我们输入set的时候，redis会自动给我们提示</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709112032802.png" alt="image-20200709112032802"></p>
+<p>Mysql学学！</p>
+<p>然后，在命令行输入</p>
+<blockquote>
+<p>set hello world</p>
+</blockquote>
+<p>输出OK，表示我们已经完成了key-value的添加</p>
+<p>输入</p>
+<blockquote>
+<p>get hello</p>
+</blockquote>
+<p>输出 “world”</p>
+<p>至此一个简单的测试用例就完成了。如果你觉得安装redis还需要使用虚拟机有点麻烦，并且你不想redis占用资源，那么你可以通过<a href="https://try.redis.io/" target="_blank" rel="noopener">在线Redis</a>，来学习Redis。</p>
+<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><p>Redis的配置文件是位于安装目录下的<strong>redis.conf</strong>文件，可以通过Config来查看或者配置Redis。</p>
+<p>格式为：</p>
+<blockquote>
+<p>CONFIG GET CONFIG_NAME</p>
+</blockquote>
+<p>例如我们可以输入 CONFIG GET * 来查看所有的配置</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709125521604.png" alt="image-20200709125521604"></p>
+<p>从这里们可以看出配置文件的结构是两行为一个配置，奇数行是配置名，这个奇数行下面的偶数行是该配置项的值。</p>
+<p>也就是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1) &quot;配置名xxx&quot;</span><br><span class="line">2) &quot;xxx的值&quot;</span><br></pre></td></tr></table></figure>
+
+<p>我们会在后面的知识讲解这些配置项的含义。</p>
+<p>先使用CONFIG GET PORT查看redis日志的等级</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;notice&quot;</span><br></pre></td></tr></table></figure>
+
+<p>使用CONFIG SET CONFIG_NAME CONFIG_VALUE 的格式可以设置配置项的值，例如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CONFIG SET loglevel warning</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<p>再查看的时候结果就变了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;warning&quot;</span><br></pre></td></tr></table></figure>
+
+<p>题外话：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Warning: since Redis is pretty fast an outside user can try up to 150k passwords per second against a good box. This means that you should use a very strong password otherwise it will be very easy to break.</span><br><span class="line">因为redis速度太快，所以暴力破解密码也很快，如果你的redis地址暴露，数据安全岌岌可危。</span><br></pre></td></tr></table></figure>
+
+<h2 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h2><p>Redis支持五种基本的数据结构：</p>
+<p><strong>String：</strong>这是Redis中最基本的元素，它不仅仅可以存储我们日常中的字符串，它还能存储一些音乐、图片，甚至序列化之后的Java对象(你想到了什么？)，一个String最多可以存储<strong>512MB</strong>的内容。</p>
+<blockquote>
+<p>SET url “blooog.top”</p>
+<p>OK</p>
+<p>GET url</p>
+<p>“blooog.top”</p>
+</blockquote>
+<p><strong>Hash：</strong> Redis中的Hash是一系列键值对的集合，类似于Java中的Map，Hash本质上是String类型的field和String类型的value的映射表，一个Hash映射表可以存储2<sup>32</sup> -1个键值对。</p>
+<p>我们在Redis命令行敲上HMSET 出现一串提示：</p>
+<blockquote>
+<p>HMSET key field value [field value ……]</p>
+</blockquote>
+<p>根据这个结构我们输入一个Hash</p>
+<blockquote>
+<p>HMSET user:admin name zhouxx url blooog.top post redis</p>
+</blockquote>
+<p>然后使用命令</p>
+<blockquote>
+<p>HGETALL user:admin</p>
+</blockquote>
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1) &quot;name&quot;</span><br><span class="line">2) &quot;zhouxx&quot;</span><br><span class="line">3) &quot;url&quot;</span><br><span class="line">4) &quot;blooog.top&quot;</span><br><span class="line">5) &quot;post&quot;</span><br><span class="line">6) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
+
+<p><strong>List：</strong> 类似于数组，里面可以存储 2<sup>32</sup> -1个String类型的元素，使用LPUSH命令可以进行存储，语法也比较简单，直接把要存进去的元素写在后面就行了。</p>
+<p>例如：</p>
+<blockquote>
+<p>LPUSH exlist zhouxx blooog.top redis</p>
+</blockquote>
+<p>取出元素可以使用LRANGE命令</p>
+<blockquote>
+<p>LRANGE exlist 0 5</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意，List中的顺序和们输入的顺序是相反的。</p>
+<p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
+<p>使用SADD KEY ELE添加元素，例如：</p>
+<blockquote>
+<p>SADD exset zhouxx</p>
+<p>SADD exset blooog.top</p>
+<p>SADD exset redis</p>
+</blockquote>
+<p>使用SMAMERS zhouxx命令查看集合中的东西</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1) &quot;zhouxx&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
+
+<p>同样的，Set中也可以存放2<sup>32</sup> -1个String类型的元素。</p>
+<p>注意：Set中仅能存放不同的元素，第二次插入的相同元素会无效。</p>
+<p><strong>Zset：</strong> 有序集合，Zset和Set相似，都不允许插入相同的元素，不同的是Zset中每个元素都有一个Score用来代表权值，Redis通过Score来进行排序。默认为正序，并且Score可以重复。</p>
+<p>使用 ZADD KEY SCORE ELE添加元素，例如：</p>
+<blockquote>
+<p>ZADD exzset 12.12 zhouxx</p>
+<p>ZADD exzset 11.11 blooog.top</p>
+<p>ZADD exzset 6.18 redis</p>
+</blockquote>
+<p>使用ZRANGEBYSCORE KEY START END命令读取SCORE区间内的元素</p>
+<blockquote>
+<p>ZRANGEBYSCORE  exzset 6.18 12.12</p>
+</blockquote>
+<p>结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出这个范围要求是双向闭区间。</p>
+<h2 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
+<p>命令还是很多的（这个是真的有！）所以下一篇博客会单独讲Redis中的命令。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reward-btn">
+        打赏
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE%E5%8E%9F%E7%90%86/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">SpringBoot学习笔记（二）：自动配置原理</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "cyVYcYwwMQ4bKvMVsB4BzGCr-gzGzoHsz",
+    app_key: "WKskGv5QXUjcz6AM5KTqog7v",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "不说两句吗~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2020
+         周某某
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="BloooG"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+    
+    <div id="music">
+    
+    
+    
+    <iframe frameborder="no" border="1" marginwidth="0" marginheight="0" width="200" height="86"
+        src="//music.163.com/outchain/player?type=2&id=1330348068&auto=0&height=66"></iframe>
+</div>
+
+<style>
+    #music {
+        position: fixed;
+        right: 15px;
+        bottom: 0;
+        z-index: 998;
+    }
+</style>
+    
+  </div>
+</body>
+
+</html>
