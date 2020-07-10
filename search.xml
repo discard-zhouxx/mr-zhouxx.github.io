@@ -628,7 +628,7 @@
 </blockquote>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
 
-<p>注意，List中的顺序和们输入的顺序是相反的。</p>
+<p>注意，List中的顺序和们输入的顺序是相反的，为什么会这样呢？因为我们使用的是LPUSH，也就是按照输入的顺序从List左边插入。</p>
 <p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
 <p>使用SADD KEY ELE添加元素，例如：</p>
 <blockquote>
@@ -656,8 +656,12 @@
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
 
 <p>可以看出这个范围要求是双向闭区间。</p>
-<h2 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
-<p>命令还是很多的（这个是真的有！）所以下一篇博客会单独讲Redis中的命令。</p>
+<h2 id="Redis和它的二百命令"><a href="#Redis和它的二百命令" class="headerlink" title="Redis和它的二百命令"></a>Redis和它的二百命令</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
+<p>命令还是很多的（这个是真的有！），据官网上说，Redis有二百多条命令。</p>
+<p>Redis官方把根据命令负责的模块，将命令分为多个命令集，有了分类再掌握命令就方便了。官网也提供了快速查询的通道。</p>
+<p>英文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文版的翻译不是很全，但是一些经常用的命令都做了翻译。</p>
 ]]></content>
       <categories>
         <category>Redis</category>
