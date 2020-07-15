@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Spring,SpringBoot,Java,JVM,周某某" />
+   
+  <meta name="description" content="周某某的个人博客，记录Spring、Spring Boot、Java特性等知识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    让人头疼的多线程：Volatile和线程可见性 |  BloooG
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+
+<link rel="alternate" href="/atom.xml" title="BloooG" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-让人头疼的多线程：Volatile和线程可见性"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  让人头疼的多线程：Volatile和线程可见性
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9AVolatile%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%8F%AF%E8%A7%81%E6%80%A7/" class="article-date">
+  <time datetime="2020-07-15T02:06:20.000Z" itemprop="datePublished">2020-07-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">多线程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><strong>INTRO：</strong> 多线程编程一直是一个比较难的技术，知识点多而且复杂，脑子不好使的我曾经在这方面跌倒无数次，多线程中的每一个关键字都有可能牵扯出一大堆的技术问题，这篇博客就来深挖一下Volatile关键字。</p>
+<a id="more"></a>
+
+<h2 id="一段奇怪的代码"><a href="#一段奇怪的代码" class="headerlink" title="一段奇怪的代码"></a>一段奇怪的代码</h2><p>我们先来看看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> flag = <span class="keyword">true</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        ThreadTest tt = <span class="keyword">new</span> ThreadTest();</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.print(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">2</span>);</span><br><span class="line">        tt.flag = <span class="keyword">false</span>;</span><br><span class="line">        System.out.print(<span class="string">"main线程即将运行结束……"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码的逻辑非常简单，创建一个线程，不断循环，等待循环结束之后，输出i的值。循环的停止由主线程main控制，很多同学都会觉得答案是不固定的（取决于计算机性能，两秒钟跑多少次循环），那么究竟是不是这样呢？</p>
+<p>控制台在两秒钟之后显示</p>
+<blockquote>
+<p>main线程即将运行结束……</p>
+</blockquote>
+<p>随后陷入漫长的等待，并没有i值的显示，只能主动结束程序运行。</p>
+<p>为什么会这样呢？我希望大家能够认真思考这个问题，锻炼自己的思考能力，然后再往下看。</p>
+<p>原来是JVM会对你的代码进行优化，负责这部分的是JIT组件（Just In Time Compiler），JIT会导致你运行的指令（你写的代码会被编译成Class文件，然后由JVM根据Class文件指挥操作系统执行更底层的指令）不是当初你写的代码，它会自作主张的帮你优化一些它认为需要优化的代码，以提高运行速度。</p>
+<p>在这个例子中，它认为该线程中没有改变flag值的变量，那么它就会优化你的代码，想要偷偷少那么一个从内存中读取flag的过程，于是它把Flag的值（并非flag的地址）放到CPU中的一个缓存中，不再从内存中读取Flag的值了，另一个CPU对Flag进行写操作是写内存中的，所以这个写操作对另一个线程<strong>不可见</strong>。</p>
+<p>程序被重排序为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> flag = <span class="keyword">true</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        ThreadTest tt = <span class="keyword">new</span> ThreadTest();</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="comment">//看下面</span></span><br><span class="line">                <span class="comment">//var会被缓存到CPU中，不再读取flag</span></span><br><span class="line">                <span class="keyword">boolean</span> <span class="keyword">var</span> = tt.flag;</span><br><span class="line">                <span class="keyword">while</span>(<span class="keyword">var</span>)&#123;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                </span><br><span class="line">                System.out.print(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">2</span>);</span><br><span class="line">        tt.flag = <span class="keyword">false</span>;</span><br><span class="line">        System.out.print(<span class="string">"main线程即将运行结束……"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>例子中，JVM把语句的顺序（我们认为的语义）进行优化（出BUG）的过程叫做指令重排序。</p>
+<p>那么很多问题接踵而来，为什么Java要指令重排序？有没有什么可以解决指令重排序导致的语义改变？</p>
+<h2 id="指令重排序"><a href="#指令重排序" class="headerlink" title="指令重排序"></a>指令重排序</h2><p>接下来回答上面两个问题：</p>
+<p>*<em>为什么Java要指令重排序? *</em></p>
+<p>我们平常编写的代码对于开发人员来说很多细节都是被忽略的，但是对于计算机来说不同，例如下面这段程序：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x=<span class="number">100</span>;</span><br><span class="line">y=z;</span><br></pre></td></tr></table></figure>
+
+<p>对于计算机来说，步骤是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">将100值存到x中</span><br><span class="line">读取z的值</span><br><span class="line">将z值写进y</span><br></pre></td></tr></table></figure>
+
+<p>对于CPU来说，过程是这样的：写 -&gt; 读 -&gt; 写。对于CPU来说，写过程需要额外等待IO（参考计算机组成原理中CPU的MESI协议），JVM为了尽快的使用CPU就会将单线程内语义无关的语句重新排序执行。JVM重排序的语句：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">y=z;</span><br><span class="line">x=<span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+
+<p>CPU指令变成了读 -&gt; 写 -&gt; 写，这两条语句在我们看来语义是没有区别的，但是对于CPU来说提前运行了一丢丢丢的时间。</p>
+<p>总体来说指令重排序就是为了压榨CPU的性能，充分利用CPU的时间片。</p>
+<p><strong>怎么解决指令重排序所导致的语义改变？</strong></p>
+<p>指令重排序必须遵循<strong>as if serial语义</strong>：即不论指令怎么重新排序，程序（单线程）的执行结果不能发生改变。指令重排序在单线程时是安全的，但是多线程的时候就有可能导致语义发生变化，线程之间的不可见性会导致线程之间不能正常通信。</p>
+<p>有三种方法可以解决上面的问题：</p>
+<ol>
+<li><p>加上JVM参数： -Djava.compiler=NONE，这个参数会禁止JVM进行重排序，但是不推荐使用这种方法。网上有种说法：现在计算机计算速度很快，没必要再重排序，直接加上这个参数就能避免线程之间的不可见发生。</p>
+<p> 博主不是很认同这种说法，博主认为正是因为CPU的运算速度很快，所以才要尽量缩减CPU的IO时间，否则CPU阻塞在IO什么也不做，那CPU速度再快又怎样呢？</p>
+</li>
+<li><p>使用volatile关键字：</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">boolean</span> flag = <span class="keyword">true</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        ThreadTest tt = <span class="keyword">new</span> ThreadTest();</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">2</span>);</span><br><span class="line">        tt.flag = <span class="keyword">false</span>;</span><br><span class="line">        System.out.println(<span class="string">"main线程即将运行结束……"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 运行程序，出现我们想要的结果。</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200715212744310.png" alt="image-20200715212744310"></p>
+</li>
+<li><p>使用synchornized同步：</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> flag = <span class="keyword">true</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        ThreadTest tt = <span class="keyword">new</span> ThreadTest();</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">                        i++;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">2</span>);</span><br><span class="line">        tt.flag = <span class="keyword">false</span>;</span><br><span class="line">        System.out.println(<span class="string">"main线程即将运行结束……"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 将i变量加入到同步代码块中，再次运行：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200715204900711.png" alt="image-20200715204900711"></p>
+</li>
+</ol>
+<p>下面会详细讲解后两种方法解决问题的原理。</p>
+<h2 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h2><p>上面使用volatile关键字修饰了flag变量，我们来百度一下volatile变量是用来干嘛的。</p>
+<p>百度说：volatile 的特性有两个，保证了不同线程对这个变量进行操作时的可见性，即一个线程修改了某个变量的值，这新值对其他线程来说是立即可见的；禁止进行指令重排序。</p>
+<p>情况真的是这样的吗？</p>
+<p>我们查找一下JVM规范文档中的原话，说的是这一句：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200715215452358.png" alt="image-20200715215452358"></p>
+<p>*这个文档不推荐大家直接看，而是应该结合其他人的博客，以这个作为标准参考。需要文档的可以发邮件给我索要。</p>
+<p>被volatile修饰的field不能被缓存。并没有提到上面的两个特性，这是怎么回事呢？</p>
+<p>我们回到上一个例子中，flag变量不可见的原因是什么？是JVM指令重排序进行了优化，将flag的值放入CPU缓存中。如果flag用volatile修饰，flag就不能被缓存进CPU，自然就解决了线程间不可见性的问题，每次都会CPU都会读取flag的值。volatile禁止指令重排序这个特性又是怎么回事呢？上面讲过了，重排序的例子中创建了一个新变量缓存到CPU中，flag被volatile修饰后，就不能再缓存了，如果JVM仍旧使用指令重排序就违反了as if serial语义，这就是为什么volatile能够禁止指令重排序的根本原因。</p>
+<h3 id="volatile原理"><a href="#volatile原理" class="headerlink" title="volatile原理"></a>volatile原理</h3><p>上面说了volatile能够禁止CPU对变量（其实就是内存中的一部分区域）进行缓存，volatile通知JVM该变量不能被缓存，那么JVM何德何能控制内存能否缓存进CPU呢？毕竟CPU作为计算机的核心，JVM只是运行在操作系统上的一个软件而已，我CPU还不是想缓存谁就缓存谁？</p>
+<p>然而，CPU自知自己有可能因为缓存犯错，所以提供了内存屏障，内存屏障使用了四条汇编级别的指令。volatile也是使用这四条指令来约束指令重排序的，下面讲一下volatile禁止重排序的规则。</p>
+<ol>
+<li>volatile的读操作的下一条操作不允许指令重排序</li>
+<li>volatile的写操作下一条操作仅允许普通指令重排序，volatile操作不允许重排序</li>
+<li>普通读写操作不允许下面一条volatile写操作重排序</li>
+</ol>
+<p>*注：volatile操作意思为操作被volatile修饰的变量，普通操作意思为没有被volatile修饰的变量</p>
+<p>画一个表格来表示上述规则：</p>
+<table>
+<thead>
+<tr>
+<th>前一条操作（纵）\后一条操作（横）</th>
+<th>普通读/写</th>
+<th>volatile读</th>
+<th>volatile写</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>普通读/写</td>
+<td>√</td>
+<td>√</td>
+<td>×</td>
+</tr>
+<tr>
+<td>volatile读</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+</tr>
+<tr>
+<td>volatile写</td>
+<td>√</td>
+<td>×</td>
+<td>×</td>
+</tr>
+</tbody></table>
+<h2 id="synchronized解决可见性原理"><a href="#synchronized解决可见性原理" class="headerlink" title="synchronized解决可见性原理"></a>synchronized解决可见性原理</h2><p>JSR-133（一群大佬开会发布的规范）规定synchronized获取锁前后保证线程的可见性，原理和volatile关键字相同。</p>
+<p>那么我们看看synchronized放在哪里会生效:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">    <span class="comment">//加锁之前，读内存屏障</span></span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//释放锁之后，写内存屏障</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">    <span class="comment">//加锁之前，读内存屏障</span></span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">    &#125;</span><br><span class="line">    i++;</span><br><span class="line">    <span class="comment">//释放锁之后，写内存屏障</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是下面这种是不行的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">//加锁之前，读内存屏障</span></span><br><span class="line"><span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">    <span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">    	i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//释放锁之后，写内存屏障</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为synchronized只会执行一次，下一次就不生效了，flag仍旧会被缓存进CPU中。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了以下知识点：</p>
+<ol>
+<li>线程不可见性的原因</li>
+<li>指令重排序是什么？</li>
+<li>volatile关键字有什么用？</li>
+<li>volatile关键字的原理。</li>
+<li>synchronized怎么解决可见性问题</li>
+</ol>
+<p>我们学习这些底层知识的目的不一定工作中用得到，只是为了培养一种计算机思维能力，不至于自己写的代码运行结果是什么都不知道。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reward-btn">
+        打赏
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9AVolatile%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%8F%AF%E8%A7%81%E6%80%A7/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Volatile/" rel="tag">Volatile</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag">多线程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/" rel="tag">线程安全</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/%E5%BF%AB%E4%B9%90%E7%9A%84SpringMVC%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB%E4%B8%8B%E7%9A%84SpringMVC/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">快乐的SpringMVC（一）：前后端分离下的SpringMVC</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "cyVYcYwwMQ4bKvMVsB4BzGCr-gzGzoHsz",
+    app_key: "WKskGv5QXUjcz6AM5KTqog7v",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "不说两句吗~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2020
+         周某某
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="BloooG"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+    
+    <div id="music">
+    
+    
+    
+    <iframe frameborder="no" border="1" marginwidth="0" marginheight="0" width="200" height="86"
+        src="//music.163.com/outchain/player?type=2&id=1330348068&auto=0&height=66"></iframe>
+</div>
+
+<style>
+    #music {
+        position: fixed;
+        right: 15px;
+        bottom: 0;
+        z-index: 998;
+    }
+</style>
+    
+  </div>
+</body>
+
+</html>

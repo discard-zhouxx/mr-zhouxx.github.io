@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://blooog.top/"/>
-  <updated>2020-07-12T06:52:57.249Z</updated>
+  <updated>2020-07-15T16:16:29.324Z</updated>
   <id>https://blooog.top/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>让人头疼的多线程：Volatile和线程可见性</title>
+    <link href="https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9AVolatile%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%8F%AF%E8%A7%81%E6%80%A7/"/>
+    <id>https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9AVolatile%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%8F%AF%E8%A7%81%E6%80%A7/</id>
+    <published>2020-07-15T02:06:20.000Z</published>
+    <updated>2020-07-15T16:16:29.324Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;strong&gt;INTRO：&lt;/strong&gt; 多线程编程一直是一个比较难的技术，知识点多而且复杂，脑子不好使的我曾经在这方面跌倒无数次，多线程中的每一个关键字都有可能牵扯出一大堆的技术问题，这篇博客就来深挖一下Volatile关键字。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="多线程" scheme="https://blooog.top/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    
+    
+      <category term="多线程" scheme="https://blooog.top/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    
+      <category term="Volatile" scheme="https://blooog.top/tags/Volatile/"/>
+    
+      <category term="线程安全" scheme="https://blooog.top/tags/%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/"/>
+    
+  </entry>
   
   <entry>
     <title>快乐的SpringMVC（一）：前后端分离下的SpringMVC</title>
