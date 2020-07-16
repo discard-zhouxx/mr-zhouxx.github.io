@@ -79,7 +79,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">2.5k</span>
+            <span class="post-count">3.1k</span>
         </span>
     </span>
 
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">9 分钟</span>
+            <span class="post-count">11 分钟</span>
         </span>
     </span>
 </div>
@@ -212,6 +212,23 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">//加锁之前，读内存屏障</span></span><br><span class="line"><span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">    <span class="keyword">while</span>(tt.flag)&#123;</span><br><span class="line">    	i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//释放锁之后，写内存屏障</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>因为synchronized只会执行一次，下一次就不生效了，flag仍旧会被缓存进CPU中。</p>
+<h2 id="synchronized和volatile的区别"><a href="#synchronized和volatile的区别" class="headerlink" title="synchronized和volatile的区别"></a>synchronized和volatile的区别</h2><p>例子中synchronized和volatile都能解决可见性问题，但是区别如下：</p>
+<ol>
+<li>synchronized作用于一段代码或者方法上，volatile用于修饰变量。</li>
+<li>volatile不会造成线程的阻塞，synchronized可能会造成线程的阻塞。</li>
+<li>volatile只保证线程的可见性，不保证线程的原子性，因为volatile只是让被修饰的变量不能缓存。synchronized能够保证可见性以及原子性，synchronized会将私有内存和公共内存做同步。</li>
+<li>volatile比synchronized更省资源。例子中也可以看到，volatile在两秒钟内所做的循环比synchronized所做的循环多得多。</li>
+</ol>
+<p>上面的区别提到了原子性，原子性和可见性是线程安全的两个重要特点。</p>
+<p>可见性我们已经说过了，线程对某一公共变量的修改对另一线程总是可见。volatile拒绝公共变量被私有缓存，每次读取和修改都让线程去内存中读取，保证了线程的可见性。</p>
+<p>原子性是指线程的操作一旦开始就不可中断，也不会被其他线程所干扰。也就是当两个线程同时对一个变量操作的时候，结果可能不确定，但是结果一定是可以预测的a或者b两种结果。例如线程A对i进行加1操作，另一个线程B对i进行减1操作，例子中不论线程执行的先后，两个线程执行完毕之后i值总是不变。然而减一/加一并非是原子操作。它通常包含三个步骤：CPU从内存读取i；对i进行操作；将i写入内存。我们可以大胆假设，如果不保证原子性（也就是不把三个步骤看作一个步骤），可能会出现这种情况：</p>
+<ol>
+<li>A线程读取i值为0，此时B线程也读取了i值为0（此时A和B均未执行写操作）；</li>
+<li>随后A线程对i值进行修改，A线程中i值为1，B线程此时也对i值修改，B线程中i值为-1；</li>
+<li>A线程将自己的i值写到内存，此时i值为1；</li>
+<li>B线程将自己的i值写到内存，此时i值为-1；</li>
+</ol>
+<p>很明显结果和我们预想的不符合，这就是线程中的原子性被破坏了，要怎么做呢？使用synchronized关键字就可以，A线程告诉B线程，我执行写操作的时候，你不能读，等我写完了你才能读，这就保证了线程的原子性。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了以下知识点：</p>
 <ol>
 <li>线程不可见性的原因</li>
@@ -219,6 +236,7 @@
 <li>volatile关键字有什么用？</li>
 <li>volatile关键字的原理。</li>
 <li>synchronized怎么解决可见性问题</li>
+<li>v&amp;s的区别</li>
 </ol>
 <p>我们学习这些底层知识的目的不一定工作中用得到，只是为了培养一种计算机思维能力，不至于自己写的代码运行结果是什么都不知道。</p>
  
