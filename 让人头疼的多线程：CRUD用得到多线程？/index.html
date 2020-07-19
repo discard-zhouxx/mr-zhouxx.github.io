@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Spring,SpringBoot,Java,JVM,周某某" />
+   
+  <meta name="description" content="周某某的个人博客，记录Spring、Spring Boot、Java特性等知识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    让人头疼的多线程：CRUD用得到多线程？ |  BloooG
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+
+<link rel="alternate" href="/atom.xml" title="BloooG" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-让人头疼的多线程：CRUD用得到多线程？"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  让人头疼的多线程：CRUD用得到多线程？
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/" class="article-date">
+  <time datetime="2020-07-16T14:35:28.000Z" itemprop="datePublished">2020-07-16</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">多线程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">13 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p><strong>INTRO：</strong>多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。</p>
+<a id="more"></a>
+
+<h2 id="嘛是多线程？"><a href="#嘛是多线程？" class="headerlink" title="嘛是多线程？"></a>嘛是多线程？</h2><p>线程：程序执行的最小单位。线程线程，一条线上的程序，我们把程序的执行当作一条线，从头到尾，中间可能有打结（循环结构），分叉（判断结构），但是并不影响我们从线头撸到线尾。</p>
+<p>上面是单线程的情况，多线程就是有很多根线，CPU走走这条线，跑跑那条线，不专注在一棵树上吊死。</p>
+<p>举一个生活中的例子，某妹子是一个专业养备胎二十年的老女神。她为了维护自己的女神形象无法让这些备胎见面，所以她只能敷衍过一个备胎之后再敷衍另一个备胎。某一天早晨，备胎A发消息说给女神买了早餐，一分钟后备胎B给女神发了早安，女神是应该先吃完A的早餐之后再回复备胎B，还是先回复备胎B的早安然后继续等A的早餐呢？</p>
+<p>答案很明显是先把B的早安回了，毕竟闲着也是闲着不是？这个例子中女神就是CPU，两个备胎就是线程，是否知道线程的作用了呢？如果这个例子是单线程的，就会出现这种情况：备胎A给女神买了早餐，女神开始等待备胎A的早餐，一分钟后备胎B给女神发了早安，女神并没有看到，因为女神呆呆望着门口等待A的早餐，更别说回复了。</p>
+<p>多线程的意义就在于此，把CPU等待IO的时间充分利用起来，CPU等待IO的时候，就给它安排计算，无情压榨。</p>
+<p>既然多线程这么香，为什么不到处都用多线程呢，两个表达式就开一个线程岂不是速度飞起？</p>
+<p>多线程还是有缺点的：</p>
+<ol>
+<li>线程的切换需要消耗系统资源。</li>
+<li>线程的创建需要消耗大量系统资源。</li>
+<li>线程之间的安全问题比较复杂。</li>
+<li>多线程有可能发生死锁。</li>
+<li>线程会占用额外的内存空间。</li>
+</ol>
+<p>这些缺点有些是可以避免的，能否避免、怎样避免就是我们为什么要学习多线程技术，也是多线程技术复杂的原因，因为它必须解决这么多的多线程缺陷。</p>
+<h2 id="CRUD用得到多线程？"><a href="#CRUD用得到多线程？" class="headerlink" title="CRUD用得到多线程？"></a>CRUD用得到多线程？</h2><p>有同学要问了，我开发的项目都是用的Spring，无非就是增删改查，哪里用得到多线程嘛。</p>
+<p>我们来看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserInfo <span class="title">getUserInfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户id查询用户信息</span></span><br><span class="line">        <span class="keyword">return</span> userInfo;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderInfo <span class="title">getOrderinfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户Id查询该用户的订单信息</span></span><br><span class="line">        <span class="keyword">return</span> orderInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设我们有一个界面需要调用这两个Service层方法，也就是某一Controller调用了这两个方法，并且将查询到的用户信息和订单信息打包成一个JSON字符串，而服务器架构是这样的：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717123728495.png" alt="image-20200717123728495"></p>
+<p>静态服务器做负载均衡，接收用户请求，动态服务器（Tomcat）集群用处理请求进行运算，数据库服务器存储数据。</p>
+<p>如果不使用多线程，那么两个方法顺序执行，是这样的步骤：</p>
+<ol>
+<li>静态服务器接收到用户请求</li>
+<li>静态服务器转发请求给动态服务器</li>
+<li>动态服务器处理请求，先调用getUserInfo()方法向数据库服务器查询数据</li>
+<li>数据返回到动态服务器，动态服务器调用getOrderInfo()方法向数据库服务器查询数据</li>
+<li>数据解析成JSON字符串数据给静态服务器</li>
+</ol>
+<p>观察第4-5步，动态服务器调用getUserInfo方法之后需要向数据库服务请求数据，此时CPU进入闲置状态，因为CPU在等待数据库服务器返回数据，假设动态服务器到数据库服务器需要0.5s，那么这0.5s中大概有0.45s都是在浪费CPU。</p>
+<p>使用多线程就不一样了，动态服务器向数据库服务器查询UserInfo数据的要求之后，该线程继续等待数据的返回，而是另一线程则紧接着发送查询OrderInfo数据的请求，并且自己等待数据的返回。（没错，这个叫做异步）</p>
+<p>悄咪咪地说一句，Spring针对这种异步情况提供了一个注解——@Async，有时间讲一讲。</p>
+<h2 id="创建多线程"><a href="#创建多线程" class="headerlink" title="创建多线程"></a>创建多线程</h2><p>学习多线程的第一步当然是创建几个多线程玩玩啦！</p>
+<p>创建多线程有两种方式：</p>
+<p>继承Thread并且重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread0().start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实现Runnable接口重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Thread0()).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最终还是要把Runnable类传递到Thread中，Runnable也就图一乐，真要用线程还是Thread。既然如此为什么要使用Runnable呢？因为Java不支持多继承，一个类只能有一个爹，而且实现Runnable接口更能体现面向接口编程的开发理念。</p>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>通过Thread的源码我们可以得知Java线程一共有六种状态：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> State &#123;</span><br><span class="line">    NEW,</span><br><span class="line">    RUNNABLE,</span><br><span class="line">    BLOCKED,</span><br><span class="line">    WAITING,</span><br><span class="line">    TIMED_WAITING,</span><br><span class="line">    TERMINATED;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">State</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>NEW：新建状态，线程对象刚创建，还没有调用start()方法跑起来。这里提一句，run方法和start方法一定要分清楚，run方法是你告诉计算机打算开启一个新线程运行run方法中的代码，start方法才是开始新线程。</p>
+<p>RUNNABLE：就绪状态，表示线程随时都可以运行，这个状态可能发生在刚调用线程的start方法、sleep方法时间到了，从wait状态被唤醒、CPU正常切换到另一个线程。</p>
+<p>BLOCKED：阻塞状态，表示线程暂时不能运行，处于等待锁的状态，例如运行到synchronized关键字。</p>
+<p>WAITING：等待状态，表示线程当前正在等待另一线程唤醒，通常使用wait()，join()等进入。</p>
+<p>TIMED_WAITING：带时间的等待状态，例如sleep方法，时间到了就自然进入RUNNABLE状态。</p>
+<p>TERMINATED：销毁状态，线程逻辑也就是run()方法执行完毕，不需要再调度该线程。</p>
+<p>用一个图可以表示这六种状态的相互转换：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717141332216.png" alt="image-20200717141332216"></p>
+<p>可以把这几种状态比作皇帝后宫妃子的状态。</p>
+<p>NEW：选进宫中，进行培训（哪有刚来就被皇上宠幸的）。</p>
+<p>RUNNABLE：随时可以被翻牌子，等待皇上宠幸。</p>
+<p>BLOCKED：被得宠的妃子欺压，打进冷宫，等到得宠的妃子释怀（释放锁）才能继续被皇上宠幸。</p>
+<p>WAITING：不孕不育，除非别的妃子或者来了神医，否则皇上再也不宠幸你了。</p>
+<p>TIMED_WAITING：来大姨妈，时间到了恢复可以被皇上宠幸的状态。</p>
+<p>TERMINATED：完成妃子的终极目标，怀孕了……不用伺候皇上了。</p>
+<p>有一说一，感觉全网没有比这个更加形象的比喻了……但是BLOCKED的比喻不是很符合，凑合看吧。</p>
+<h2 id="线程相关的方法"><a href="#线程相关的方法" class="headerlink" title="线程相关的方法"></a>线程相关的方法</h2><p>讲过了线程状态的切换，下面就需要讲一讲线程之间切换状态所使用的方法了。线程相关的方法按照调用方式可以分为三种，对象方法，该方法属于对象，由对象调用；静态方法，该方法属于Thread类，调用该方法会作用于调用者；Object继承的方法，该方法继承自Object类。</p>
+<h3 id="对象方法"><a href="#对象方法" class="headerlink" title="对象方法"></a>对象方法</h3><p><strong>start()：</strong>这个方法使线程从NEW状态变为RUNNABLE状态</p>
+<p><strong>getState()：</strong>获取线程当前的状态</p>
+<p><strong>interrupt()：</strong>中断当前线程</p>
+<p><strong>join()：</strong>等待指定线程完事才能继续运行，如果使用有参的join()方法的话，就是等指定线程完事或者经过指定毫秒。被插队的线程进入WAITING状态。</p>
+<p>上面是Thread对象的常用方法（其他getter和setter方法就不列出来了）。</p>
+<p>简单说一下interrupt()方法吧。</p>
+<p><strong>中断：</strong>用一把剪刀把线程剪短，不让线程继续进行下去。然而Java中的中断机制并没有剪刀剪线头那么利落。Java中调用interrupt()方法是给线程一个中断标记，具体怎样处理还是要看线程自己，线程觉得自己工作很重要，就不理会中断标志位，而是继续执行下面的语句。</p>
+<p>还有两个名字很像的方法难以区分，interrupted和isInterrupted。interrupted()是个静态方法，返回当前线程的中断状态（不管你是调用哪个线程对象的interrupted()方法，这条语句哪个线程执行就是哪个线程的中断状态），并且清除线程的中断标记。isInterrupted()不是静态方法，返回线程对象的中断状态，不会清除中断标记。</p>
+<p>说到中断，曾经有一个stop()方法可以强制结束线程的生命，后来被弃用了。调用线程对象的stop方法会立刻释放该线程对象的锁和线程资源。例如一个程序在转账过程中被中断，转出成功但是还没转入目标账户，用户钱凭空消失！你永远也不知道调用一个线程的stop()方法时这个线程在干什么。所以现在中断方式由命令中断，改为请求中断，由线程自己决定要不要中断。</p>
+<h3 id="静态方法"><a href="#静态方法" class="headerlink" title="静态方法"></a>静态方法</h3><p><strong>sleep()：</strong>调用该方法的线程会进入TIMED_WAITING状态，等待事件结束之后，自动恢复RUNNABLE状态。</p>
+<p><strong>yield()：</strong>放弃当前的CPU使用权，也就是皇上翻了某妃子的牌子，妃子说皇上您再重新选一次，皇上有可能再次翻该妃子的牌子，也有可能翻其他妃子的牌子。</p>
+<p><strong>interrupted()：</strong> 这个讲过了，请看上面中断部分。</p>
+<p><strong>currentThread()：</strong>获取当前线程的线程对象。例如我们实现Runnable接口的时候，此时当前线程对象是Runnable类型，无法使用上一章节的非静态方法，此时可以调用currentThread()方法获取Thread对象，然后通过对象来调用非静态方法。</p>
+<p><strong>activeCount()：</strong>返回当前线程组存活的线程。</p>
+<h3 id="Object的遗产方法"><a href="#Object的遗产方法" class="headerlink" title="Object的遗产方法"></a>Object的遗产方法</h3><p><strong>wait()：</strong>这个方法是从Object继承过来的，它会让线程释放锁，并且进入WAITING状态。看起来和sleep很相似，后面会详细讲解wait和sleep的区别。</p>
+<p><strong>notify()/notifyAll()：</strong> 这两个方法也是从Object继承过来的，notify方法会唤醒处于wait的线程。</p>
+<p>注意：wait()和notify()都必须放在同步代码块或者同步方法中。</p>
+<h3 id="wait-方法和sleep-方法的区别"><a href="#wait-方法和sleep-方法的区别" class="headerlink" title="wait()方法和sleep()方法的区别"></a>wait()方法和sleep()方法的区别</h3><p>上面我们了解到wait方法和sleep方法都会让线程进入WAITING/TIMED_WAITING状态，两者有以下区别：</p>
+<ol>
+<li>血统不同：wait方法继承自Object，而sleep是Thread类的一个静态方法。</li>
+<li>对待锁的方式不同：sleep不会释放锁，只是把CPU让出来。wait不仅会让出CPU，还会释放锁。</li>
+<li>运行环境不同：sleep在哪都可以运行，wait只能运行于同步代码块/同步方法中</li>
+</ol>
+<h2 id="线程的属性"><a href="#线程的属性" class="headerlink" title="线程的属性"></a>线程的属性</h2><p><strong>线程优先级：</strong>在Java中，每个线程都有自己的优先级，并且子类可以继承父类的优先级。可以通过getter和setter方法获取或者设置线程的优先级。Java将线程的优先级分为10个等级，并且提供了三个常量：MIN_PRIORITY=1;MAX_PRIORITY=10;NORM_PRIORITY=5。</p>
+<p>线程调度器准备执行新线程时，会优先选择较高优先级的线程，但是线程优先级依赖于系统。不同的平台可能对线程的优先级处理不同，例如Windows中线程的优先级分为七个等级，而Oracle为Linux提供的JVM没有线程优先级这个概念，所有线程优先级是平等的。</p>
+<p>所以不要过度依赖线程优先级，程序的正确性如果依赖于线程优先级，那么不同的平台可能会出现不同结果。</p>
+<p>另外，低优先级的线程可能一直无法执行，导致低优先级的线程饿死。</p>
+<p><strong>守护线程：</strong> Java中设置了一个标志位——Daemon，这个标志位表示该线程是否是一个守护线程。先来介绍一下守护线程，守护线程唯一的作用就是给其他线程提供服务，例如提供计时功能。</p>
+<p>值得讨论的是守护线程的生命周期，守护线程不是妃子，守护线程是妃子的丫鬟，当所有的妃子都嗝屁了之后，守护线程也会随之嗝屁，因为守护线程没有提供服务的对象了，也就没有存在的必要了。</p>
+<p>这里提醒大家：千万不要让守护线程访问数据库，就像之前说的stop方法一样，你永远不知道守护线程什么时候嗝屁了。</p>
+<p><strong>线程组：</strong> 为了方便管理线程，Java推出了线程组这一概念。Thread的构造方法提供了线程组的参数，传入所在线程组的对象。假设A线程创建了B线程，并且B线程的构造方法没有设置线程组对象，那么默认B线程和A线程同属于一个线程组。</p>
+<p>然而，大家在程序中尽量避免使用线程组。因为Java引入了更好的线程管理集合。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<ol>
+<li>什么是多线程</li>
+<li>多线程关Spring CRUD什么事</li>
+<li>线程的状态和转化</li>
+<li>线程相关的方法</li>
+<li>wait和sleep方法的区别</li>
+<li>线程的属性</li>
+<li>线程优先级好不好使？</li>
+<li>守护线程是个啥？</li>
+</ol>
+<p>多线程的知识还是有点多的，尽管都是很基础的东西，但是以自己的水平写出来还是比较吃力的。这篇博客写了两天，还是有很多知识没有提及，比如多线程中的异常处理机制。有时间的话再另写一篇博客补充上去吧。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reward-btn">
+        打赏
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag">多线程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag">并发</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9AVolatile%E5%92%8C%E7%BA%BF%E7%A8%8B%E5%8F%AF%E8%A7%81%E6%80%A7/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">让人头疼的多线程：Volatile和线程可见性</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "cyVYcYwwMQ4bKvMVsB4BzGCr-gzGzoHsz",
+    app_key: "WKskGv5QXUjcz6AM5KTqog7v",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "不说两句吗~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2020
+         周某某
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="BloooG"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+    
+    <div id="music">
+    
+    
+    
+    <iframe frameborder="no" border="1" marginwidth="0" marginheight="0" width="200" height="86"
+        src="//music.163.com/outchain/player?type=2&id=1330348068&auto=0&height=66"></iframe>
+</div>
+
+<style>
+    #music {
+        position: fixed;
+        right: 15px;
+        bottom: 0;
+        z-index: 998;
+    }
+</style>
+    
+  </div>
+</body>
+
+</html>

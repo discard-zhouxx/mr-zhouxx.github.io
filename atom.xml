@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://blooog.top/"/>
-  <updated>2020-07-16T10:42:42.228Z</updated>
+  <updated>2020-07-19T03:13:31.136Z</updated>
   <id>https://blooog.top/</id>
   
   <author>
@@ -15,6 +15,29 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>让人头疼的多线程：CRUD用得到多线程？</title>
+    <link href="https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/"/>
+    <id>https://blooog.top/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/</id>
+    <published>2020-07-16T14:35:28.000Z</published>
+    <updated>2020-07-19T03:13:31.136Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;strong&gt;INTRO：&lt;/strong&gt;多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="多线程" scheme="https://blooog.top/categories/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    
+    
+      <category term="多线程" scheme="https://blooog.top/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    
+      <category term="并发" scheme="https://blooog.top/tags/%E5%B9%B6%E5%8F%91/"/>
+    
+  </entry>
   
   <entry>
     <title>让人头疼的多线程：Volatile和线程可见性</title>
