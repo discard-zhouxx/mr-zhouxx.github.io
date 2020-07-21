@@ -1160,6 +1160,8 @@
     <title>让人头疼的多线程：synchronized暴打线程安全</title>
     <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9Asynchronized%E6%9A%B4%E6%89%93%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/</url>
     <content><![CDATA[<p><strong>INTRO：</strong>线程安全是什么？我就头铁不加锁。性能是什么？我每个方法都来一个synchronized。这篇博客synchronized原理入手，教你怎样合理利用synchronized写出性能和安全兼顾的代码。</p>
+<a id="more"></a>
+
 <h2 id="JVM的内存模型——JMM"><a href="#JVM的内存模型——JMM" class="headerlink" title="JVM的内存模型——JMM"></a>JVM的内存模型——JMM</h2><p>说到线程安全，就不得不讲讲Java中JVM的内存模型JMM（Java Momory Model）。</p>
 <p>JMM定义了Java在内存中运行的模式，简单来说就是Java在运行时的数据在内存中以怎样的形式存放。</p>
 <p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200720101831305.png" alt="image-20200720101831305"></p>
