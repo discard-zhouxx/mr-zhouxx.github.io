@@ -1300,17 +1300,4 @@
         <tag>synchronized</tag>
       </tags>
   </entry>
-  <entry>
-    <title>强撸Java基础：搞定Java那些分不清楚的IO类</title>
-    <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9A%E6%90%9E%E5%AE%9AJava%E9%82%A3%E4%BA%9B%E5%88%86%E4%B8%8D%E6%B8%85%E6%A5%9A%E7%9A%84IO%E7%B1%BB/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong> </p>
-]]></content>
-      <categories>
-        <category>Java基础</category>
-      </categories>
-      <tags>
-        <tag>IO</tag>
-        <tag>Java基础</tag>
-      </tags>
-  </entry>
 </search>
