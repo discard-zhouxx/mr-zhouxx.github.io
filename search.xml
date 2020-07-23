@@ -1300,4 +1300,103 @@
         <tag>synchronized</tag>
       </tags>
   </entry>
+  <entry>
+    <title>强撸Java基础：Java中神秘的NIO</title>
+    <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9AJava%E4%B8%AD%E7%A5%9E%E7%A7%98%E7%9A%84NIO/</url>
+    <content><![CDATA[]]></content>
+      <categories>
+        <category>Java</category>
+      </categories>
+      <tags>
+        <tag>Java</tag>
+        <tag>NIO</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>强撸Java基础：一键掌握IO框架和装饰者模式</title>
+    <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9A%E4%B8%80%E9%94%AE%E6%8E%8C%E6%8F%A1IO%E6%A1%86%E6%9E%B6%E7%9A%84%E6%8E%92%E5%88%97%E7%BB%84%E5%90%88%E7%B1%BB/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong> Java中的IO类有多复杂相信学习过的人都接触过，觉得IO框架复杂那是没有掌握它的设计思想，死记硬背不是好方法，只有掌握思想才能灵活运用。本文就从设计思想入手，从零开始讲解Java IO框架。</p>
+<a id="more"></a>
+
+<h2 id="为什么要有IO框架"><a href="#为什么要有IO框架" class="headerlink" title="为什么要有IO框架"></a>为什么要有IO框架</h2><p>我们知道计算机的核心是CPU，CPU直接与内存交互，内存又和其他设备进行交互。我们平常的代码都是运行在内存中的，那么我们怎么和其他设备打交道呢？比如我们的硬盘、鼠标、显示器等等。我们的数据怎么存储呢？内存一断电，我们的程序的数据就丢失了，这个数据如何持久化呢？有的同学说了，我用mysql等数据库持久化呀。新问题又来了，数据库怎么持久化存储数据的呢？另一个问题，数据怎么发送到数据库呢？</p>
+<p>也就是说，程序设计语言需要一个让程序和除本机内存之外的其他设备进行交换数据的方法。</p>
+<p>OK，知道为什么要有IO之后，我们先来思考如何解决这个问题，既然大家都是计算机的组成部分，那么1和0大家都认识吧？我们就通过二进制传输数据，这个1和0源源不断的传输过去，就像流水一样，我们就叫他字节流吧。</p>
+<p>输入输出又怎么看呢？</p>
+<p>我们是程序的编写者，当然要站在程序的角度看问题，数据读取到程序中就是输入，数据写到其他设备就叫输出。</p>
+<p>区分好输入和输出，IO就可以分为两类了，输入流和输出流。</p>
+<h2 id="InputStream和OutputStream"><a href="#InputStream和OutputStream" class="headerlink" title="InputStream和OutputStream"></a>InputStream和OutputStream</h2><p>上面说到内存和其他设备准备用字节为单位传输数据，于是自然分成了字节输入流和字节输出流两个类——InputStream和OutputStream。这两个类可谓是Java IO框架中的基石，其他类都是从这两个类中扩展出来的。因为计算机的底层传递的数据就是有0和1组成的bit流，bit流又以字节为单位进行传输。</p>
+<p>输入流和输出流面对的对象比较广泛，小到鼠标，大到显示器，这些外设没有不认识bit流的。然而，只有这两个类就够了吗？并不是，你看显示器和硬盘的接口一样吗？鼠标和键盘的接口一样吗？很明显，这两个类直接拿来使用会不太好用。我们针对不同的外设加点不同的料（装饰模式）。</p>
+<h2 id="装饰模式"><a href="#装饰模式" class="headerlink" title="装饰模式"></a>装饰模式</h2><p>想要学习IO框架的思想，必须了解装饰模式是什么。这部分的知识来自《Head First 设计模式》，很推荐大家看一下这本书，简单易懂，可以让大家最快的了解设计模式。</p>
+<p>先来一个装饰模式的例子：说的是星巴兹咖啡（这个咖啡店不存在，如果你搜索星巴兹，结果一定是装饰模式）更新了自己的订单系统，他们的订单系统有一个超类——Beverage，类中有一个方法叫做cost()，用于计算该饮料的花费。所有的饮料都继承自这个超类，这个大家都能理解，因为咖啡、牛奶、茶都是属于饮料的一种，价格也不一样嘛。</p>
+<p>然而还有一个问题，咖啡中可以加入各种配料，比如豆浆（话说外国人喝豆浆吗？）、酸奶、巧克力等等，他们按照之前的想法就顺便创建了加了豆浆的咖啡、加了酸奶的咖啡、加了巧克力的咖啡、加了豆浆和巧克力的牛奶、加了酸奶的牛奶、加了巧克力的牛奶……等等等等排列组合个类。</p>
+<p>程序员不怕苦不怕难，类多就类多吧，然而出现了一个新配料……芋泥，又要创建&amp;%&amp;*%个类，每次添加新的配料，我们都要增加倍数增长的类，这谁顶得住呀！而且如果配料的价格发生变化，哦豁，和这个配料相关的所有类都需要修改。</p>
+<p>于是大佬想了一个办法——我们通过套娃的方法对饮料进行操作，举个例子吧，实现加了豆浆和巧克力配料的牛奶。</p>
+<p>从牛奶（Milk）对象开始，Milk继承自超类Beverage，并且继承了一个cost()方法，如果我们想加入豆浆这个配料，那么我们也把豆浆继承Beverage类，所以它里面也有cost()方法的存在。同理，巧克力配料也继承Beverage类。</p>
+<p>我们将豆浆加进牛奶中，也就是使用豆浆把牛奶装饰起来。再加入巧克力，使用巧克力把豆浆和牛奶装饰起来。估计很多人到这里就听不明白了，什么装饰来装饰去的。</p>
+<p>直接上豆浆配料的代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BeanMilk</span> <span class="keyword">extends</span> <span class="title">Beverage</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> Beverage beberage;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">double</span> cost;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BeanMilk</span><span class="params">(Beverage beverage)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cost = <span class="number">10</span>;</span><br><span class="line">        <span class="keyword">this</span>.beverage = beverage;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">cost</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.cost + <span class="keyword">this</span>.beverage.cost();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>巧克力配料的代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Chocolate</span> <span class="keyword">extends</span> <span class="title">Beverage</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> Beverage beberage;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">double</span> cost;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Chocolate</span><span class="params">(Beverage beverage)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cost = <span class="number">5</span>;</span><br><span class="line">        <span class="keyword">this</span>.beverage = beverage;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">cost</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.cost + <span class="keyword">this</span>.beverage.cost();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>是不是有点明白了？</p>
+<p>再来一个单品牛奶的代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Milk</span> <span class="keyword">extends</span> <span class="title">Beverage</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">double</span> cost;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> Milk&#123;</span><br><span class="line">        <span class="keyword">this</span>.cost = <span class="number">30</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">cost</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.cost;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>写一个调用的main代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">        <span class="comment">//买牛奶，当然要先创建牛奶对象啦！</span></span><br><span class="line">        Beverage b = <span class="keyword">new</span> Milk();</span><br><span class="line">        <span class="comment">//将牛奶对象加入到豆浆</span></span><br><span class="line">        b = <span class="keyword">new</span> BeanMilk(b);</span><br><span class="line">        <span class="comment">//将带着牛奶对象的豆浆对象加入到巧克力</span></span><br><span class="line">        b = <span class="keyword">new</span> Chocolate(b);</span><br><span class="line">        System.out.println(b.cost());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>不知道大家现在是否明白装饰模式的实现，也就是装饰者增加行为到被包装的对象上。</p>
+<h2 id="I-O-PutStream和它的子民们"><a href="#I-O-PutStream和它的子民们" class="headerlink" title="I/O PutStream和它的子民们"></a>I/O PutStream和它的子民们</h2><p>言归正传，回到Java IO，我们可以发现，而所有类的爸爸InputStream和OutPutStream就是上面例子中的Beverage。</p>
+<p>那么我们常用的一些读写流（也就是我们出售的单品，牛奶咖啡茶等等）有什么呢？</p>
+<p><strong>FileInputStream和FileOutputStream:</strong> 我们经常操作文件，比如把数据写入文件，或者从文件中读取数据。既然是文件的读写流，那么操作的对象就是File了，所以我们需要把文件对象传进File读写流，告诉Java读从哪读，写从哪写。这里的File不是指文件，而是操纵系统的文件系统，但是大家理解为文件就行了。这个常用，是重点。</p>
+<p><strong>ByteArrayInputStream和ByteArrayOutputStream：</strong>字节数组输入输出流，这个只是在内存中自娱自乐，存在的意义就是把数据变成字节数组流，可以使用toString()方法获取，Tomcat中用过这个，因为不停转换为String太浪费性能了，所以直接使用这个流对数据进行操作过滤。</p>
+<p><strong>PipedInputStream和PipedOutputStream：</strong>管道输入输出流，用于多线程之间的管道通信，用的不太多。</p>
+<p><strong>ObjectInputStream和ObjectOutputStream：</strong>看名字就知道是干嘛的，对象和基本类型做持久化的，偶尔会用。</p>
+<p>大概就这些了吧……有遗忘的我再补充，欢迎大家提醒补充。</p>
+<p>讲完牛奶咖啡茶这些单品，我们来看配料都有哪些</p>
+<p><strong>PushbackInputStream：</strong>回退流，这个配料会给单品带来怎样的口感呢？首先我们需要了解什么是回退，我们读取数据流的时候都是从头到尾顺序读，中间不能中断。回退就是数据流中出现我们不想要的数据我们把这个数据塞回去，然后结束读取。</p>
+<p>举个例子：→14245507342433右，比如我们不想要数据0，我们就从1424开始读取，读呀读，读到0。发现不是我们需要的数据，我们就把0给塞回去，只要142455就行了。</p>
+<p>具体的使用方法请查询文档，我在这里只介绍它的功能，大家知道有这么个类就行了。</p>
+<p><strong>BufferedInputStream和BufferedInputStream：</strong>这个是我们经常用的配料流（别跟别人说配料流，我只是为了类比上面的例子，自己造的词）。因为一次一次的读写流要耗费大量的系统资源，就像一百辆车送一百件快递一样，将单品流的对象传给这个流，可以实现带有缓冲区的单品流。这个经常用！这个经常用！这个经常用！几乎所有的流都要用这个。</p>
+<p><strong>DataInputStream和DataOutputputStream：</strong>这个流专门用来将各种基本类型（字符串也行）的数据写进读出一个流的，值得注意的是，两者要一起配合使用，并且读取要和写入的顺序一样，否则就会驴唇不对马嘴。</p>
+<p><strong>PrintStream：</strong>看源码System类的源码就知道，System.out就是PrintStream的一个实例，所以这个用的多不多大家应该都明白。</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public final static PrintStream out &#x3D; null;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h2 id="另一个王国——Writer和Reader"><a href="#另一个王国——Writer和Reader" class="headerlink" title="另一个王国——Writer和Reader"></a>另一个王国——Writer和Reader</h2><p>话说I/O PutStream虽然强大，底层的东西都能读都能写，但是也不是所有的数据它都认识。例如：文本文件，英文的还好，英文使用ASCII码表，一个字节键盘上能敲出来的所有字母符号都能表示，使用字节流也能读取。那中文的文本文档可咋整呢？一个字节总共八位，还有一个得是0，ASCII码最多也就表示127个汉字就完犊子了，一个字节一个字节读取的都是乱码。所以中文使用Unicode，里面一百多万个字符随便用，GB就别说了，一不小心就乱码。</p>
+<p>所以另一个需求出现了，读文本文件，还是一个字占好多字节的那种。Writer和Reader应运而生，这两个哥们专门针对各种文本文档的读写。它们两个也是作为超类的存在，也有一大堆子民。</p>
+<p>先来看看单品有哪些：</p>
+<p><strong>FileWriter和FileReader：</strong>这两个就是专门用于字符的读写流了。和FileInputStream一样，我就不再赘述了。这个也很常用，重点！想当年我自己整了一个文本文档作为项目的数据库……那个对字符串的各种操作算法……不敢回想。</p>
+<p><strong>PipedReader和PipedWriter：</strong>不常用，多线程通信字符。</p>
+<p><strong>StringReader和StringWriter：</strong>很明显这个就是用来处理字符串到字符流的，偶尔会用。</p>
+<p><strong>PrintWriter：</strong>该类可用来创建一个文件并向<strong>文本文件</strong>写入数据。可以理解为java中的文件输出，那么它和FileWriter有什么区别呢？PrintWriter可以提供格式化的输出，也就是我们常用的print()函数。其实InputStream中也有和这个类似的PrintStream但是不太常用，上面就没有写出来。</p>
+<p><strong>CharArrayWriter和CharArrayReader：</strong>很明显这个是针对字符数组来设计的读写字符流，不在赘述了。</p>
+<p>讲完这些单品之后，再来看看Writer和Reader有哪些常用的装饰：</p>
+<p><strong>BufferedWriter和BufferedReader：</strong>和Input中的Buffered IO流相同，这个非常重要，几乎读取的时候都要用到。</p>
+<p><strong>PushbackReader：</strong>同PushbackInputStream</p>
+<p><strong>LineNumberReader：</strong>看名字就知道，这个类是用来统计行数的，用的不是很多，大家需要的时候再细致学习就行了。</p>
+<h2 id="字节流和字符流转换"><a href="#字节流和字符流转换" class="headerlink" title="字节流和字符流转换"></a>字节流和字符流转换</h2><p>Java提供了两种流的相互转换的工具：</p>
+<p><strong>InputStreamReader：</strong>它将输入字节流转变为输入字符流</p>
+<p><strong>OutStreamWriter：</strong>它将输入字节流转变为输入字符流</p>
+<p>至于字符流转换为字节流还没有提供，因为字符流本身就很方便了，很多情况下没有必要再转换为字节流。</p>
+<p>而且，前面讲过字节流是一个一个字节读的，中文一个汉字可能占用两到三个字节，读字读一半可不是读到的偏旁部首，那完全是另一个字了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<ol>
+<li>IO框架存在的意义</li>
+<li>装饰模式</li>
+<li>字节流和它的小弟，以及小弟的武器们</li>
+<li>字符流和它的小弟，以及小弟的武器们</li>
+<li>字节流和字符流的转换</li>
+</ol>
+<p>你看IO的知识并不是很复杂，所以初学者完全没有必要害怕。当然，能否轻松的掌握这个框架的知识，完全在于你的面向对象功底是否扎实，如果你学起来仍旧感觉很吃力，推荐你去翻看设计模式的相关知识，本文中的装饰模式只是简单的举例介绍。</p>
+]]></content>
+      <categories>
+        <category>Java</category>
+      </categories>
+      <tags>
+        <tag>IO</tag>
+        <tag>Java</tag>
+      </tags>
+  </entry>
 </search>
