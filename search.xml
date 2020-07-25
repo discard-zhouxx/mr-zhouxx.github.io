@@ -1301,18 +1301,6 @@
       </tags>
   </entry>
   <entry>
-    <title>强撸Java基础：Java中神秘的NIO</title>
-    <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9AJava%E4%B8%AD%E7%A5%9E%E7%A7%98%E7%9A%84NIO/</url>
-    <content><![CDATA[]]></content>
-      <categories>
-        <category>Java</category>
-      </categories>
-      <tags>
-        <tag>Java</tag>
-        <tag>NIO</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>强撸Java基础：一键掌握IO框架和装饰者模式</title>
     <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9A%E4%B8%80%E9%94%AE%E6%8E%8C%E6%8F%A1IO%E6%A1%86%E6%9E%B6%E7%9A%84%E6%8E%92%E5%88%97%E7%BB%84%E5%90%88%E7%B1%BB/</url>
     <content><![CDATA[<p><strong>INTRO：</strong> Java中的IO类有多复杂相信学习过的人都接触过，觉得IO框架复杂那是没有掌握它的设计思想，死记硬背不是好方法，只有掌握思想才能灵活运用。本文就从设计思想入手，从零开始讲解Java IO框架。</p>
@@ -1397,6 +1385,199 @@
       <tags>
         <tag>IO</tag>
         <tag>Java</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MySQL冲冲冲：MySQL索引的从认识到优化</title>
+    <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E4%BC%98%E5%8C%96/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>MySQL是我们常用的关系型数据库，小巧灵活。在开发过程中，当我们的数据量超过一定程度的时候，就需要我们使用索引来优化查询和排序的速度，这篇文章就来尽量全面的讲一讲索引。</p>
+<a id="more"></a>
+
+<h2 id="索引简介"><a href="#索引简介" class="headerlink" title="索引简介"></a>索引简介</h2><p> MySQL官方给索引一个定义——帮助MySQL高效获取数据的数据结构。注意，这里得到了一个关键字，索引是一种数据结构，一种帮助我们更快速获取数据的数据结构。</p>
+<p>我们初学MySQL时并没有使用索引，查找数据需要全表扫描，也就是从第一行开始扫描，直到最后一行。如果我们表里数据非常大，上千万行的数据，全表扫面会特别慢，这个时候如果有一个“目录”来帮助我们快速定位数据就好了。</p>
+<p>这个时候就出现了索引，我们可以把索引对比成新华字典的目录，目录是不是一种独特的数据结构呢？目录由拼音+页数组成，通过对应拼音的页数我们可以快速找到想要的数据。如果没有目录，我们需要从a开始，一个字一个字的对比（MySQL这本字典可不是按规律排的），直到找到我们想查的字，如果想查a还好，想查zhouxx可咋整。</p>
+<p>通过这些描述我们知道了，WHERE条件后面需要查找的关键字可以使用索引。还有什么可以使用索引优化呢？索引还有一个别名：排好序的快速查找数据结构。所以我们在ORDER BY中也可以使用索引来优化结果。</p>
+<h2 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h2><p>上面讲过了索引是一种数据结构，所以索引是什么样的数据结构呢？     </p>
+<p>先说结果：索引是一种排序树，这里有同学就开始疑惑了，排序树是个嘛玩意？</p>
+<h3 id="排序树是啥？"><a href="#排序树是啥？" class="headerlink" title="排序树是啥？"></a>排序树是啥？</h3><p>排序树又称搜索树、查找树。看名字就知道这个和索引高度相似，索引是干嘛的？一种排好序的快速查找数据结构。这两个东西就对应起来了，那么我们只要学好了这个什么排序树就能更加接近MySQL索引的底层原理了。</p>
+<p>讲排序树之前需要大家知道一些储备知识：树的数据结构特点、二叉树的相关知识。</p>
+<p>排序树的叉不确定，本文就按照最简单的二叉排序树来讲，核心知识都是相同的，多叉排序树大家自己类比就好。</p>
+<p>先说二叉排序树的定义：</p>
+<ol>
+<li>若左子树不为空，则左子树所有结点的值均小于该结点的值</li>
+<li>若右子树不为空，则右子树所有结点的值均小于该结点的值</li>
+<li>任意结点的左右子树也是二叉排序树</li>
+<li>没有键值相等的结点</li>
+</ol>
+<p>是不是读起来很绕口？</p>
+<p>我们来看一个例子：</p>
+<p>有一串数字——8 6 5 4 7 2 3 1 9，我们怎么生成一个二叉搜索树呢？</p>
+<p>首先取出数字8作为根结点，随后下一个数字为6，比8小，所以我们把6作为8的左结点</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105612632.png" alt="image-20200725105612632"></p>
+<p>再取出一个数字5，比8小，可是8已经有左子结点了，再对比8的左子结点6，比6小，所以我们把数字5放在6的左子结点。同理数字4也是一样，现在树变成了这样：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105533427.png" alt="image-20200725105533427"></p>
+<p>这时来了一个不素之客7，比8小，又比6大，那么我们就把它放到6的右子结点：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105514803.png" alt="image-20200725105514803"></p>
+<p>按照这种从根结点逐步向下扩展，并且遵循小的放左边、大的放右边这个规律，最终生成的树就是二叉搜索树。</p>
+<p>例子中最终生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105359707.png" alt="image-20200725105359707"></p>
+<p>好吧，例子举得不好，这个树太丑了……数字是我随便敲的，长成这样我也没办法……</p>
+<p>那重新来一个例子吧，例子二：</p>
+<p>5 6 3 4 7 1 9 2 8</p>
+<p>生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725110331135.png" alt="image-20200725110331135"></p>
+<p>这个树就好看多了……</p>
+<p>那么这个树有什么作用呢？或者说为什么叫做查找树呢？</p>
+<p>我们使用第二个例子，假设需要查找数字2，从根结点查找开始，比5小，那么我们右边的树（因为排序树右边的都比根结点大）就不看了，只看左边的子树。查找到3，比3小，右边不看。查找到1，比1大，左边不看（虽然左边没结点了），只看右边，查找到2，完成查找。</p>
+<p>一共查找了4次，如果不使用二叉查找树呢？我们需要查找7次。</p>
+<p>有同学说了，你这不对，看似查找很少，其实你有一段时间浪费在生成二叉树上了。没错，这就是索引的弊端了，索引需要在修改数据的时候额外付出一点代价，但是这个代价是值得的。</p>
+<p>上面的也看到了，有的二叉查找树可能严重偏枝，也就是聚集在左子树或者右子树，排序树退化成一个链表，这样我们查找起来时间复杂度还是O(n)（如果根结点是最大值，我们需要查找最小值）。</p>
+<p>也就是9 8 7 6 5 4 3 2 1 这一串数字生成的二叉查找树。</p>
+<p>于是为了解决该问题，大佬们又设计了一个新的树形数据结构：B树，也叫做平衡树。</p>
+<h3 id="平衡树又是啥？"><a href="#平衡树又是啥？" class="headerlink" title="平衡树又是啥？"></a>平衡树又是啥？</h3><p>平衡树具有一下特性：</p>
+<ol>
+<li>具有查找树的所有特性</li>
+<li>每个结点的左子树和右子树高度差小于等于1</li>
+</ol>
+<p>这两个特性使得二叉平衡树的查找的时间复杂度总能保持最坏情况下为O(log n)，实现二叉平衡树的算法也有很多：AVL、红黑树、Treap等等，希望大家自行查询学习。</p>
+<p><strong>B树：</strong>B树属于平衡树的一种，又称为平衡多路查找树。我们来认识一下B树，《算法导论》中是这样写的B树是为磁盘或其他存取的辅助存储设备而设计的一种平衡搜索树，类似于红黑树，但是在降低磁盘I/O的操作树方面更好一点，许多数据库系统使用B树或者B树的变种来存储信息。</p>
+<p>《算法导论》中给出了B树的精确定义：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
+<p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
+<p>怎么构建B树请大家自行查询，因为不画图你们听不太明白，画图我又太懒……</p>
+<p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
+<p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
+<p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
+<p>我们看到定义中B树是每个结点都存放多个数据，B+树不同，B+树只有叶子结点存放数据，并且任何非叶子结点都会在叶结点上再次出现一次，更加丧心病狂的是把所有叶子结点从左到右链接了起来（所有叶子结点自成链表），所以我们扫描的时候只需要从第一个叶子扫描到最后一个叶子结点就行了，显然这种更适合数据库索引。</p>
+<p>除此之外，B树的查找性能不稳定，有可能在第一个结点就查找到了，也有可能</p>
+<p>来一张B+树的图：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>总结一下奇葩的B+树特点：</p>
+<ol>
+<li>父结点存放的元素都在子结点重复出现，因为此特性，叶子结点就包含了整个树的所有元素</li>
+<li>叶子结点从左到右依次链接，形成一个有序链表</li>
+</ol>
+<h2 id="B-树查找演示"><a href="#B-树查找演示" class="headerlink" title="B+树查找演示"></a>B+树查找演示</h2><p>上面简单讲了B+树的特性，回想一下我们对MySQL中索引的概况——排好序的快速查找数据结构。</p>
+<p>我们来演示一下B+树怎么快速的查找：</p>
+<p>假设我们查找数据：3</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>从根结点开始，3&lt;8，我们要查找的数据在最左子树，也就是258所在的结点。3&gt;2并且3&lt;5，我们要查找的数据在中间结点，也就是3,5所在的结点，随后成功找到3。</p>
+<p>有同学要问了，如果我查找的数字是5呢？5可是在258中出现过的数字，我怎么知道是在中间结点还是最右结点呢？同学们，你们有没有发现B+树父结点的数字会被继承给子结点，并且继承过来的数字对于子结点来说都是最大的值。当然不一定每个B+树都是继承最大的值，也可以是最小结点。所以查找的元素在非叶子结点的时候需要我们查找该值左边的子树。</p>
+<p>接下来给大家演示一个神奇的操作，区间查找。</p>
+<p>假如我们需要查找一个区间的值：6~11</p>
+<p>我们会先查找6，然后按照叶子结点之间的链表，往下遍历到13（不确定有没有多个11，遍历到13停止）。</p>
+<p>相对于B树来说，B+树作为数据库索引真是太好用了。</p>
+<h2 id="索引实战"><a href="#索引实战" class="headerlink" title="索引实战"></a>索引实战</h2><p>讲了那么多理论知识，终于到实战了。、</p>
+<p>建表之后创建索引使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE INDEX index_name ON my_table(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE my_table ADD [UNIQUE] INDEX index_name(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>建表的时候使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE mytable(  </span><br><span class="line">    ID INT NOT NULL,   </span><br><span class="line">    username VARCHAR(16) NOT NULL,  </span><br><span class="line">    INDEX [indexName] (username(length))  </span><br><span class="line">); </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>我们需要注意两个事情：</p>
+<ol>
+<li>创建索引需要占用额外的空间，请保持磁盘空间充足</li>
+<li>创建索引会对全表加锁，请在业务空闲时间创建，最好在程序规划的情况下创建</li>
+</ol>
+<p>删除索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">DROP INDEX my_index ON tablename；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE table_name DROP INDEX index_name;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>查看索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SHOW INDEX FROM my_table;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="什么时候该用索引"><a href="#什么时候该用索引" class="headerlink" title="什么时候该用索引"></a>什么时候该用索引</h3><p>上面我们学习过了，索引需要额外的插入时间，但是可以大幅度减缓我们的查询和排序时间。</p>
+<p>由此我们可以得知，在频繁读取的业务表上增加索引，对频繁作为限定条件的列增加索引。除此之外，还有一些建立索引的建议：</p>
+<ol>
+<li>主键自动建立唯一索引</li>
+<li>WHERE和ORDER BY经常用到的列增加索引</li>
+<li>高并发情况下建立索引</li>
+<li>经常用于聚合函数的列建立索引</li>
+</ol>
+<p>对几乎不读或者少读的表、修改增加删除频繁的表酌情考虑不加索引。总结如下：</p>
+<ol>
+<li>经常修改删除的不建立索引</li>
+<li>有大量重复列的不建立索引</li>
+<li>表记录太少的不建立索引，不到1000索引无关紧要</li>
+</ol>
+<h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
+<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>唯一索引：</strong> 建立索引的列不允许重复值，但是可以为空</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD UNIQUE index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>普通索引：</strong>看名字就知道，没有任何限制的普通索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>全文索引：</strong>使用大文本对象的列需要用到的索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD FULLTEXT INDEX ft_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>组合索引：</strong>利用多个列进行组合构建的索引，列中不允许有空值</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>值得注意的是组合索引，其遵循最左原则，也就是我们创建的这个索引不是col1、col2、col3随便都能使用的，这个索引只有查询为col1、col1+col2、col1+col2+col3才能使用，而像col2+col1就不能使用，一定要记住查询的顺序。</p>
+<p>并且，使用组合索引的时候可能导致因为列名太长而导致索引的key太大，影响性能，在允许的情况下使用col1(n)来取列名的前n个字符。</p>
+<h3 id="索引失效！"><a href="#索引失效！" class="headerlink" title="索引失效！?"></a>索引失效！?</h3><p>没错，你建立了索引不是就万事大吉了，很有可能你写的SQL不规范导致你的索引失效，也就是白建立索引了。</p>
+<p>有以下几种情况需要注意：</p>
+<ol>
+<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
+</li>
+<li><p>组合索引没有遵循最左原则的时候，索引会失效。（请看上面一节的讲解）</p>
+</li>
+<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
+</li>
+<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
+</li>
+<li><p>WHERE中索引列有计算、使用了函数会导致索引失效</p>
+</li>
+<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
+</li>
+<li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
+</li>
+<li><p>MySQL觉得全表扫描更快的时候</p>
+<blockquote>
+<p>SELECT * FROM my_table WHERE id=1+1;</p>
+</blockquote>
+</li>
+</ol>
+<p>这里放一张官方的图。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
+<ol>
+<li>什么是索引？为什么要有索引？</li>
+<li>从二叉排序树到B树再到B+树</li>
+<li>MySQL索引的原理是什么？</li>
+<li>B+树怎么查找范围和单行</li>
+<li>索引的使用环境</li>
+<li>MySQL有哪些索引</li>
+<li>索引失效的场景</li>
+</ol>
+<p>这两天身体有点不舒服，博客写的质量肯定不如从前。过段时间要去上海找工作了，在家沉淀蛮久了。MySQL的相关知识还是继续更下去，再更个两篇就准备去上海了，祝我好运。</p>
+]]></content>
+      <categories>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+        <tag>索引</tag>
+        <tag>数据库</tag>
       </tags>
   </entry>
 </search>
