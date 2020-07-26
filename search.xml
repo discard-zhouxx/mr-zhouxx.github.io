@@ -1390,7 +1390,7 @@
   <entry>
     <title>MySQL冲冲冲：MySQL的EXPLAIN关键字和优化</title>
     <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%9A%84EXPLAIN%E5%85%B3%E9%94%AE%E5%AD%97%E5%92%8C%E4%BC%98%E5%8C%96/</url>
-    <content><![CDATA[<p>*<em>INTRO: *</em>  MySQL针对SQL的执行情况给出了一个强大好用的工具：explain。它可以针对SELECT语句进行分析，并且输出SELECT语句的详细信息，以提供开发人员对SQL的优化，这篇博客就来教大家如何优化自己的SQL语句。</p>
+    <content><![CDATA[<p>** INTRO : ** MySQL针对SQL的执行情况给出了一个强大好用的工具：explain。它可以针对SELECT语句进行分析，并且输出SELECT语句的详细信息，以提供开发人员对SQL的优化，这篇博客就来教大家如何优化自己的SQL语句。</p>
 <a id="more"></a>
 
 <h2 id="事前准备"><a href="#事前准备" class="headerlink" title="事前准备"></a>事前准备</h2><p>我们需要创建一个百万数据级别的数据库，否则没有办法展示我们的性能优化在哪里。</p>
