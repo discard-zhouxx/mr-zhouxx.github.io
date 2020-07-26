@@ -79,7 +79,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">4.1k</span>
+            <span class="post-count">4.2k</span>
         </span>
     </span>
 
@@ -344,6 +344,7 @@
 <p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726230112760.png" alt="image-20200726230112760"></p>
 <p>我们很惊奇的看到了，prov的索引失效了，而user表的索引成功优化。这是为什么呢？</p>
 <p>这个和左外连接的特性有关，左外连接是对右表进行筛选限制，而左表的所有数据都在。所以左表总是全表扫描，添加索引也没有用处。所以我们在连接过程中，需要将数据量小的表作为主表，驱动数据量大的表作为副表，并且给数据量大的表建立索引，这种方式叫做小表驱动大表。</p>
+<p>至于为什么之前的左连接prov表索引还能生效，完全是MySQL自己帮你调整了连接方式，自动帮你优化了SQL。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
 <ol>
 <li>EXPLAIN总结</li>
