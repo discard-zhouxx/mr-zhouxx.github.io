@@ -1835,7 +1835,7 @@
 <li><p>MySQL觉得全表扫描更快的时候</p>
 </li>
 </ol>
-<p>这里放一张官方的图。</p>
+<p>这里放一张官方的图，关于索引失效的案例可以看我下一篇博客。</p>
 <p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
 <ol>
