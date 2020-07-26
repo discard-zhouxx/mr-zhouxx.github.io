@@ -13,7 +13,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>
-    MySQL冲冲冲：MySQL索引的从认识到优化 |  BloooG
+    MySQL冲冲冲：MySQL索引的从认识到实战 |  BloooG
   </title>
   <meta name="generator" content="hexo-theme-ayer">
   
@@ -49,7 +49,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-MySQL冲冲冲：MySQL索引的从认识到优化"
+  id="post-MySQL冲冲冲：MySQL索引的从认识到实战"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -60,14 +60,14 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  MySQL冲冲冲：MySQL索引的从认识到优化
+  MySQL冲冲冲：MySQL索引的从认识到实战
 </h1>
  
 
     </header>
      
     <div class="article-meta">
-      <a href="/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E4%BC%98%E5%8C%96/" class="article-date">
+      <a href="/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/" class="article-date">
   <time datetime="2020-07-25T01:53:18.000Z" itemprop="datePublished">2020-07-25</time>
 </a> 
   <div class="article-category">
@@ -88,7 +88,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">13 分钟</span>
+            <span class="post-count">12 分钟</span>
         </span>
     </span>
 </div>
@@ -157,7 +157,7 @@
 <p>《算法导论》中给出了B树的精确定义：</p>
 <p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
 <p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
-<p>怎么构建B树请大家自行查询，因为不画图你们听不太明白，画图我又太懒……</p>
+<p>怎么构建B树请大家自行查询，因为不画图听不太明白，画图我又太懒……</p>
 <p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
 <p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
 <p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
@@ -225,7 +225,7 @@
 <li>表记录太少的不建立索引，不到1000索引无关紧要</li>
 </ol>
 <h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
-<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。</p>
+<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。注意，这个索引是自动建立的。</p>
 <blockquote>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
 </blockquote>
@@ -252,7 +252,7 @@
 <ol>
 <li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
 </li>
-<li><p>组合索引没有遵循最左原则的时候，索引会失效。（请看上面一节的讲解）</p>
+<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
 </li>
 <li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
 </li>
@@ -265,9 +265,6 @@
 <li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
 </li>
 <li><p>MySQL觉得全表扫描更快的时候</p>
-<blockquote>
-<p>SELECT * FROM my_table WHERE id=1+1;</p>
-</blockquote>
 </li>
 </ol>
 <p>这里放一张官方的图。</p>
@@ -349,7 +346,7 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E4%BC%98%E5%8C%96/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -361,6 +358,15 @@
 
    
   <nav class="article-nav">
+    
+      <a href="/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%9A%84EXPLAIN%E5%85%B3%E9%94%AE%E5%AD%97%E5%92%8C%E4%BC%98%E5%8C%96/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            MySQL冲冲冲：MySQL的EXPLAIN关键字和优化
+          
+        </div>
+      </a>
     
     
       <a href="/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9A%E4%B8%80%E9%94%AE%E6%8E%8C%E6%8F%A1IO%E6%A1%86%E6%9E%B6%E7%9A%84%E6%8E%92%E5%88%97%E7%BB%84%E5%90%88%E7%B1%BB/" class="article-nav-link">

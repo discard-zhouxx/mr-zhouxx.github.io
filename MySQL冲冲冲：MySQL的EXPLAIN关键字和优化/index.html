@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+
+
+<head>
+  <meta charset="utf-8" />
+   
+  <meta name="keywords" content="Spring,SpringBoot,Java,JVM,周某某" />
+   
+  <meta name="description" content="周某某的个人博客，记录Spring、Spring Boot、Java特性等知识。" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>
+    MySQL冲冲冲：MySQL的EXPLAIN关键字和优化 |  BloooG
+  </title>
+  <meta name="generator" content="hexo-theme-ayer">
+  
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  
+<link rel="stylesheet" href="/dist/main.css">
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+  
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+  
+  
+
+  
+
+<link rel="alternate" href="/atom.xml" title="BloooG" type="application/atom+xml">
+</head>
+
+</html>
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-MySQL冲冲冲：MySQL的EXPLAIN关键字和优化"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  MySQL冲冲冲：MySQL的EXPLAIN关键字和优化
+</h1>
+ 
+
+    </header>
+     
+    <div class="article-meta">
+      <a href="/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%9A%84EXPLAIN%E5%85%B3%E9%94%AE%E5%AD%97%E5%92%8C%E4%BC%98%E5%8C%96/" class="article-date">
+  <time datetime="2020-07-26T02:25:35.000Z" itemprop="datePublished">2020-07-26</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/MySQL/">MySQL</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.1k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">15 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>*<em>INTRO: *</em> MySQL针对SQL的执行情况给出了一个强大好用的工具：explain。它可以针对SELECT语句进行分析，并且输出SELECT语句的详细信息，以提供开发人员对SQL的优化，这篇博客就来教大家如何优化自己的SQL语句。</p>
+<a id="more"></a>
+
+<h2 id="事前准备"><a href="#事前准备" class="headerlink" title="事前准备"></a>事前准备</h2><p>我们需要创建一个百万数据级别的数据库，否则没有办法展示我们的性能优化在哪里。</p>
+<p>这里教大家如何快速的创建一个百万级别乃至千万级别的表，以下在Linux环境中执行，别忘了创建数据库并且选择数据库。</p>
+<ol>
+<li><p>创建一个临时表：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE tmp_table (</span><br><span class="line">    id INT,</span><br><span class="line">    PRIMARY KEY (id)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用python把数据写入到文本文件中</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -c <span class="string">"for i in range(1, 1+1000000): print(i)"</span> &gt; /tmp/base.txt</span><br></pre></td></tr></table></figure>
+
+<p> pyhton还是很快的，一秒钟不到就搞定百万级别的输出，使用tail命令查看，千万别使用cat！博主手贱使用cat，卡了一分钟。输出完成之后对这个文件进行权限设置</p>
+<blockquote>
+<p>chmod 777 base.txt</p>
+</blockquote>
+</li>
+<li><p>使用LOAD命令加载数据进</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">load data infile &#39;&#x2F;tmp&#x2F;base.txt&#39; replace into table tmp_table;</span><br></pre></td></tr></table></figure>
+
+<p> 这时可能会报错</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726114727634.png" alt="image-20200726114727634"></p>
+<p> 原因是我们没有打开权限，需要我们在mysql的配置文件中添加 secure_file_priv = /tmp/ ,然后重启mysql</p>
+<p> 重新执行：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726115102320.png" alt="image-20200726115102320"></p>
+<p> 我的配置是志强E5-2682，只用了6秒就加载完成了。</p>
+</li>
+<li><p>再创建一个真正要用到的数据表</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;t_user&#96; (</span><br><span class="line"> &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT,</span><br><span class="line"> &#96;c_user_id&#96; varchar(36) NOT NULL DEFAULT &#39;&#39;,</span><br><span class="line"> &#96;c_name&#96; varchar(22) NOT NULL DEFAULT &#39;&#39;,</span><br><span class="line"> &#96;c_province_id&#96; int(11) NOT NULL,</span><br><span class="line"> &#96;c_city_id&#96; int(11) NOT NULL,</span><br><span class="line"> &#96;create_time&#96; datetime NOT NULL,</span><br><span class="line"> PRIMARY KEY (&#96;id&#96;),</span><br><span class="line"> KEY &#96;idx_user_id&#96; (&#96;c_user_id&#96;)</span><br><span class="line">) ENGINE&#x3D;InnoDB DEFAULT CHARSET&#x3D;utf8mb4;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>把临时表中的数据插入到数据表中</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO t_user</span><br><span class="line">  SELECT</span><br><span class="line">  id,</span><br><span class="line">  uuid(),</span><br><span class="line">  CONCAT(&#39;userNickName&#39;, id),</span><br><span class="line">  FLOOR(Rand() * 1000),</span><br><span class="line">  FLOOR(Rand() * 100),</span><br><span class="line">  NOW()</span><br><span class="line">  FROM</span><br><span class="line">  tmp_table;</span><br></pre></td></tr></table></figure>
+
+<p> 经过漫长的等待，大概三十秒左右，提示插入成功。</p>
+<p> 查看数据：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726120408611.png" alt="image-20200726120408611"></p>
+</li>
+<li><p>发现上面的数据随机不太行，我们修改一下时间，让时间更随机一点</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) year);</span><br><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) month);</span><br><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) day);</span><br><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) hour);</span><br><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) minute);</span><br><span class="line">UPDATE t_user SET create_time&#x3D;date_add(create_time, interval FLOOR(1 - (RAND() * 7)) second);</span><br><span class="line"></span><br><span class="line">UPDATE t_user SET c_user_id&#x3D;MD5(id+FLOOR(RAND() * 999999));</span><br></pre></td></tr></table></figure>
+
+<p> 又是漫长的等待，大概需要五分钟左右，接下来就是完全随机的时间和uuid啦！</p>
+</li>
+<li><p>至此，这个表创建完成。来查看一下效果：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726121659390.png" alt="image-20200726121659390"></p>
+<p> 为了保持数据的完整性，再创建一个省份表：</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE t_prov( </span><br><span class="line">    &#96;id&#96; int(11) NOT NULL AUTO_INCREMENT, </span><br><span class="line">    &#96;c_prov_id&#96; varchar(36) NOT NULL DEFAULT &#39;&#39;, </span><br><span class="line">    &#96;c_prov_name&#96; varchar(22) NOT NULL DEFAULT &#39;&#39;,  </span><br><span class="line">    PRIMARY KEY (&#96;id&#96;), </span><br><span class="line">    KEY &#96;idx_prov_id&#96; (&#96;c_prov_id&#96;)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p> 按照上面的步骤类比着给t_prov插入1000条数据，大家自行操作，我不再演示了。</p>
+</li>
+</ol>
+<h2 id="EXPLAIN简介"><a href="#EXPLAIN简介" class="headerlink" title="EXPLAIN简介"></a>EXPLAIN简介</h2><p>使用EXPLAIN工具可以模拟优化器执行你的SQL语句，从而知道MySQL如何处理你的SQL语句，用来分析查询语句或者你的表结构的瓶颈。</p>
+<p>我们直接上手来看一看EXPLIAIN怎么用，使用方法也很简单：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXPLAIN SELECT * FROM t_user;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726130103640.png" alt="image-20200726130103640"></p>
+<p>是不是很简单呢？</p>
+<p>然而这里面包含的信息就很复杂了，这些信息包括了：</p>
+<ol>
+<li>表的读取顺序</li>
+<li>数据读取操作的类型</li>
+<li>哪些索引可以使用</li>
+<li>哪些索引被使用</li>
+<li>表之间的引用情况</li>
+<li>每张表有多少行被优化器查询</li>
+</ol>
+<p>现在是不是脑瓜子嗡嗡的？</p>
+<h2 id="EXPLAIN包含的信息"><a href="#EXPLAIN包含的信息" class="headerlink" title="EXPLAIN包含的信息"></a>EXPLAIN包含的信息</h2><p>还是这张图，我把每个字段都详细讲一下：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726130103640.png" alt="image-20200726130103640"></p>
+<p><strong>id：</strong>SELECT 的执行标识符，MySQL给所有的SELECT分配了一个id，当我们进行嵌套查询的时候，id越大越先执行，id相同则从上到下执行。来一个例子：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SELECT *  </span><br><span class="line">FROM &#96;t_user&#96; </span><br><span class="line">WHERE &#96;c_province_id&#96; &#x3D; </span><br><span class="line">(</span><br><span class="line">    SELECT &#96;id&#96; </span><br><span class="line">    FROM &#96;t_prov&#96; </span><br><span class="line">    WHERE &#96;c_prov_name&#96; &#x3D; &#39;provName1&#39;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>在前面加上EXPLAIN</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726144201351.png" alt="image-20200726144201351"></p>
+<p>我们发现这个id不相同，分别为1和2，那么MySQL会先执行id为2的SELECT再执行id为1的SELECT。</p>
+<p><strong>select_type：</strong> 上面的例子我们也看到了，select_type有PRIMARY，SUBQUERY，SIMPLE。除此之外还有UNION、UNION RESULT、DEPENDENT SUBQUERY等等。通过名字我们很容易看出来这些表示的什么。</p>
+<p>PRIMARY表示此查询是最外层的查询，相对的SUBQUERY，就是子查询。SIMPLE表示这个查询就是简简单单的普通查询。像UNION就不再赘述了。</p>
+<p><strong>table：</strong> 这个表示查询的数据源，也就是我们from后面的东西。</p>
+<p>*<em>partitions: *</em> 显示的为分区表命中的分区情况。非分区表该字段为空（null），例子中并没有使用分区，所以会显示null。</p>
+<p><strong>type：</strong>这个相当的重要了，要着重说一下这个。type的意思是执行这条SQL语句的类型是什么，这些类型表示了SQL的性能。下面性能由强到弱一次排序：</p>
+<ol>
+<li><p>system：表中只有一行数据或者空表，但是只能用于Myisam和memory，InnoDB遇到这种会出现ALL或者INDEX。因为我使用的是InnoDB，所以就不演示了，这种类型的性能最好。</p>
+</li>
+<li><p>const：使用唯一索引或者主键的时候出现的，或者返回记录一定是一行记录的等值where条件时（也就是列值不允许重复），如下：</p>
+<blockquote>
+<p>EXPLAIN SELECT id FROM t_user where id = 1;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726165340142.png" alt="image-20200726165340142"></p>
+</li>
+<li><p>eq_ref：在连接多个表的查询中出现，并且连接的外键是另一个表的主键或者唯一索引，并且必须为NOT NULL，如下：</p>
+<blockquote>
+<p>EXPLAIN SELECT u.* FROM t_user AS u JOIN t_prov AS p ON u.c_province_id = p.id;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726170835508.png" alt="image-20200726170835508"></p>
+</li>
+<li><p>ref：和eq_ref中类似，也出现在多表连接查询中，针对非唯一或者非主键索引，或者使用了最左前缀规则索引的查询，如下：</p>
+<blockquote>
+<p> EXPLAIN SELECT p.* FROM t_prov AS p JOIN t_user AS u ON p.c_prov_id = u.c_user_id;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726171457575.png" alt="image-20200726171457575"></p>
+<p> 例子中，两个列都没有建立索引，所以查询为ref，而eq_ref中的两个列均有主键索引或唯一索引。</p>
+<p> 此外，有时我们使用非唯一索引，且查询结果不一定为一行的时候，也有可能出现ref，如下：</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE c_user_id = ‘f081560a4804af51199749a0088db438’;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726171753232.png" alt="image-20200726171753232"></p>
+<p> 注意：这个与实际查询出来的结果无关，MySQL觉得你这一列有可能查出来多个结果，那么就会是ref。</p>
+</li>
+<li><p>range：看名字就知道，这个适用于index中的范围判断，范围判断包括&gt;、&lt;、IS NULL、&lt;=、&gt;=等等。如下：</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_prov WHERE id &gt;1000;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726172441013.png" alt="image-20200726172441013"></p>
+<p> 这个时候唯一索引或者主键索引已经丧失优势了，退化为range。</p>
+</li>
+<li><p>index：这个代表全索引扫描，经常出现在ORDER BY等，在索引上就可以获得数据的情况。如下：</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user order by id;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726173327415.png" alt="image-20200726173327415"></p>
+</li>
+<li><p>all：这个全表扫描，完全没有走索引，出现这个不改改SQL就等着用户骂娘吧，当然有时候我们无法避免出现all，例如上面的多表查询，我们可以通过小表驱动大表的方式来增强性能，这个后面再说。</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726174052691.png" alt=""></p>
+</li>
+</ol>
+<p>type就先讲到这里，后面优化的时候我会带大家看几个SQL的优化，在实战中巩固知识。</p>
+<p><strong>possible_keys：</strong>有可能用到的索引，一个或者多个。查询时候涉及到的字段如果存在索引，那么就将该索引列出，但是不一定被使用。</p>
+<p><strong>keys：</strong>实际用到的索引，上面讲过了possible_keys是可能用到的索引，这个与之搭配使用，这个是该SQL语句实际用到的索引。还记得上节讲的索引失效的问题吗？这两个字段搭配起来就可以实现检测索引是否失效的问题。</p>
+<p>这里再放出来索引失效的几种情况，并且给出案例供大家分析：</p>
+<ol>
+<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id&gt;0 OR c_province_id &gt; ‘0’;</p>
+</blockquote>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726182908512.png" alt="image-20200726182908512"></p>
+<p> 相对应的，OR两边表达式用到的列都有索引：</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id&gt;0 OR c_province_id = ‘0’;</p>
+</blockquote>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726182934137.png" alt="image-20200726182934137"></p>
+</li>
+<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
+<p> 这个限于没有建立多列索引，我就不演示了吧……</p>
+</li>
+<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
+</li>
+<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE c_user_id=1;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726194813380.png" alt="image-20200726194813380"></p>
+<p> 上面的语句中的1没有使用单引号引起来，所以发生了隐式的类型转换，导致索引失效</p>
+<p> 正确写法应该是下面这样，varchar类型一定要用引号括起来</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726194933369.png" alt="image-20200726194933369"></p>
+</li>
+<li><p>WHERE中索引列参与计算、使用了函数会导致索引失效</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id -1 = 9;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726195838088.png" alt="image-20200726195838088"></p>
+<p> 正确写法应该是</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id = 1+9;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726200007299.png" alt="image-20200726200007299"></p>
+</li>
+<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id IS NOT NULL;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726200105904.png" alt="image-20200726200105904"></p>
+<p> 应该使用某值代替NULL，这样不仅可以避免该状况，还能让MySQL减少一次是否为空的判断，正确写法为：</p>
+<blockquote>
+<p>EXPLAIN SELECT * FROM t_user WHERE id &gt;0 OR id&lt;0;</p>
+</blockquote>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726200400601.png" alt="image-20200726200400601"></p>
+</li>
+<li><p>MySQL觉得全表扫描更快的时候</p>
+</li>
+</ol>
+<p>至此，大部分索引失效的情况我都依次举例列出来了。</p>
+<p><strong>key_len：</strong>看名字就知道，索引最大可能的长度，并非实际的长度。如果是单列索引，那就整个索引长度算进去，如果是多列索引，那么查询不一定都能使用到所有的列，具体使用到了多少个列的索引，这里就会计算进去，没有使用到的列，这里不会计算进去。</p>
+<p>并且，key_len只计算WHERE语句用到的索引，ORDER BY和GROUP BY就算用到索引了也不会计算进去。</p>
+<p><strong>ref：</strong> 显示索引的哪一列被使用了，如果是使用的常数等值查询，这里会显示const。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726165340142.png" alt="image-20200726165340142"></p>
+<p>如果是连接查询，被驱动表的执行计划这里会显示驱动表的关联字段。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726202743973.png" alt="image-20200726202743973"></p>
+<p>如果是条件使用了表达式或者函数，或者条件列发生了内部隐式转换，这里可能显示为func。</p>
+<p><strong>rows：</strong>MySQL自己估计的这次查找可能需要扫描读取多少行，不是精确值。这个值可以反映SQL语句的性能，理论上这个值越小越好。</p>
+<p><strong>filtered：</strong>它显示返回结果的行占需要读到的行(rows列的值)的百分比，这个值不一定准确。</p>
+<p><strong>Extra：</strong>显示额外信息，这里包含的信息可多了去了，这里限于篇幅，无法一一讲解，希望大家可以再实际开发中自行查询。</p>
+<h2 id="索引优化实例"><a href="#索引优化实例" class="headerlink" title="索引优化实例"></a>索引优化实例</h2><h3 id="单表索引优化"><a href="#单表索引优化" class="headerlink" title="单表索引优化"></a>单表索引优化</h3><p>首先给出一个案例：依旧是t_user表的信息，我们需要找出省份id为10，城市id大于，并且创建时间最新的那个用户的名字。</p>
+<p>看到这个我们立刻写出一个SQL语句</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT u.c_name </span><br><span class="line">FROM t_user AS u </span><br><span class="line">WHERE u.c_province_id &#x3D; 10 </span><br><span class="line">AND c_city_id &gt; 80 </span><br><span class="line">ORDER BY create_time DESC  </span><br><span class="line">LIMIT 1</span><br></pre></td></tr></table></figure>
+
+<p>功能已经完成了，查询结果为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726212240170.png" alt="image-20200726212240170"></p>
+<p>可以看到我们查询所花费的时间为0.5秒，这个对于用户来说还是可以接受的。然而，这仅仅只是查询的时间，还会有数据传输、DNS解析、服务器计算、请求等待、锁。这么多步骤哪个不需要时间，这还是百万级别的数据表，千万级别更加可怕。</p>
+<p>使用EXPLAIN查看SQL的执行情况：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726212638263.png" alt="image-20200726212638263"></p>
+<p>请看红圈圈出来的地方，一个全表扫描，一个使用了文件排序，这两个是最耗费时间的。首先我们解决全表扫描的问题，那就是添加索引。</p>
+<p>索引怎么添加呢？既然是三列都被WHERE和ORDER BY使用，那么当然是使用符合索引了，按照最左原则，我们需要根据这个SQL从左到右建立索引。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t_user ADD INDEX idx_p_c_t (c_province_id,c_city_id,create_time);</span><br></pre></td></tr></table></figure>
+
+<p>等待几秒，索引建立完成，使用命令查看</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726213336359.png" alt="image-20200726213336359"></p>
+<p>现在执行效率如何呢？再次执行。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726213434167.png" alt="image-20200726213434167"></p>
+<p>发现全表扫描没了，但是文件排序还是没有解决。</p>
+<p>我们来分析一下为什么，我们都知道ORDER BY会最后执行，前面有一个<code>c_city_id &gt; 80</code>范围查找，这个查找打乱了原有的排序，所以ORDER BY无法使用索引排序，也就是索引失效，ORDER BY只能重新进行排序。</p>
+<p>因此，我们需要修改原有的索引，将c_city_id列的索引删除。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t_user DROP INDEX idx_p_c_t;</span><br></pre></td></tr></table></figure>
+
+<p>重新添加索引：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t_user ADD INDEX idx_p_c_t (c_province_id,create_time);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726214226747.png" alt="image-20200726214226747"></p>
+<p>发现不仅range变成了ref（没有范围性判断，当然就是ref了），更让人惊喜的还有Extra中出现了Backward index scan。这个是MySQL 8.0之后出现的新的优化机制，当他发现数据好像在索引尾部的时候，不会从头向尾扫描，而是直接从尾拿取数据。</p>
+<p>执行时间也接近秒查，可见这次优化是非常成功的。</p>
+<h3 id="双表索引优化"><a href="#双表索引优化" class="headerlink" title="双表索引优化"></a>双表索引优化</h3><p>双表中我们会使用左外连接和右外连接的方式来进行。</p>
+<p>我们仍旧使用上面的两个表作为示范使用，给出一个案例，要求查找省份唯一标识和用户唯一标识相等的省份名（UUID理论上是不可能重复的，可是我使用的是MD5伪UUID，你可以类比为两个没有索引的键）。</p>
+<p>开始案例之前先把原有的索引删除，删成下图这样就可以了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726224002148.png" alt="image-20200726224002148"></p>
+<p>相信大家很快就能写出来一个SQL：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT p.c_prov_name FROM t_prov AS p JOIN t_user AS u ON p.c_prov_id &#x3D; u.c_user_id;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726225236401.png" alt="image-20200726225236401"></p>
+<p>发现连个都是全表扫描，后面的预测扫描行数更是接近全表行数，如果没有后面的Using join buffer执行起来还真不一定多少时间呢。</p>
+<p>全表扫描当然要开始优化了，我们按照顺序先对左表添加索引吧。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t_prov ADD INDEX idx_prov_id (c_prov_id);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726225642292.png" alt="image-20200726225642292"></p>
+<p>我们发现左边的表执行类型变为了ref，并且rows也变成了1。也就是表t_prov的优化很成功。然而，u表是一个百万级数据的表，依旧是全表扫描的执行类型，之前的优化仍然是杯水车薪。我们再给右边的user表加索引试试。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t_user ADD INDEX idx_user_id (c_user_id);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726230112760.png" alt="image-20200726230112760"></p>
+<p>我们很惊奇的看到了，prov的索引失效了，而user表的索引成功优化。这是为什么呢？</p>
+<p>这个和左外连接的特性有关，左外连接是对右表进行筛选限制，而左表的所有数据都在。所以左表总是全表扫描，添加索引也没有用处。所以我们在连接过程中，需要将数据量小的表作为主表，驱动数据量大的表作为副表，并且给数据量大的表建立索引，这种方式叫做小表驱动大表。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<ol>
+<li>EXPLAIN总结</li>
+<li>EXPLAIN包含的信息什么含义</li>
+<li>索引失效的实际案例</li>
+<li>索引优化的实际案例</li>
+</ol>
+<p>看标题内容挺少的，然而更多的知识潜藏在我们日常开发实战中，最后再送大家两个口诀。</p>
+<p><strong>索引失效：</strong></p>
+<ol>
+<li>全值匹配最喜欢，最左前缀规矩严。</li>
+<li>带头大哥不能死，中间兄弟不能断。</li>
+<li>索引列上少计算，范围之后全完蛋。</li>
+<li>LiKE百分最右边，覆盖星号讨人嫌。</li>
+<li>不等空值还有OR，你建索引也失效。</li>
+<li>VAR引号要出现，SQL高级也不难。</li>
+</ol>
+<p><strong>索引口诀：</strong></p>
+<ol>
+<li>主键索引自动建，频繁查找索引现。</li>
+<li>查询关联其他表，外键索引也要看。</li>
+<li>频繁更新不适合，WHERE不建没法办。</li>
+<li>单建组合选择难，高并发下组合建。</li>
+<li>若要速度有体现，排序字段你得建。</li>
+<li>统计分组你咋看？索引索引建建建。</li>
+</ol>
+<p>睡觉啦，晚安。口诀看不懂，记得联系我哦。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reward-btn">
+        打赏
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blooog.top/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%9A%84EXPLAIN%E5%85%B3%E9%94%AE%E5%AD%97%E5%92%8C%E4%BC%98%E5%8C%96/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/EXPLAIN/" rel="tag">EXPLAIN</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%B4%A2%E5%BC%95/" rel="tag">索引</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">MySQL冲冲冲：MySQL索引的从认识到实战</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "cyVYcYwwMQ4bKvMVsB4BzGCr-gzGzoHsz",
+    app_key: "WKskGv5QXUjcz6AM5KTqog7v",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "不说两句吗~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2020
+         周某某
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></s>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="BloooG"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <script>
+      if (window.matchMedia("(max-width: 768px)").matches) {
+        document.querySelector('.content').classList.remove('on');
+        document.querySelector('.sidebar').classList.remove('on');
+      }
+    </script>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: 'main',
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto'
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css">
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script>
+
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+
+
+<link rel="stylesheet" href="/css/clipboard.css">
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+
+
+<!-- CanvasBackground -->
+
+
+    
+    <div id="music">
+    
+    
+    
+    <iframe frameborder="no" border="1" marginwidth="0" marginheight="0" width="200" height="86"
+        src="//music.163.com/outchain/player?type=2&id=1330348068&auto=0&height=66"></iframe>
+</div>
+
+<style>
+    #music {
+        position: fixed;
+        right: 15px;
+        bottom: 0;
+        z-index: 998;
+    }
+</style>
+    
+  </div>
+</body>
+
+</html>
