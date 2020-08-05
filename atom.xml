@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://blooog.top/"/>
-  <updated>2020-07-26T16:13:13.331Z</updated>
+  <updated>2020-08-05T04:19:58.058Z</updated>
   <id>https://blooog.top/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>记一次面试：上海元恒信息技术有限公司</title>
+    <link href="https://blooog.top/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/"/>
+    <id>https://blooog.top/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E7%A7%91%E6%8A%80%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/</id>
+    <published>2020-08-05T02:08:24.000Z</published>
+    <updated>2020-08-05T04:19:58.058Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        
+        
+          &lt;p&gt;&lt;strong&gt;INTRO:&lt;/strong&gt;
+        
+      
+    
+    </summary>
+    
+    
+      <category term="面试" scheme="https://blooog.top/categories/%E9%9D%A2%E8%AF%95/"/>
+    
+    
+      <category term="面试" scheme="https://blooog.top/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+  </entry>
   
   <entry>
     <title>MySQL冲冲冲：MySQL的EXPLAIN关键字和优化</title>
