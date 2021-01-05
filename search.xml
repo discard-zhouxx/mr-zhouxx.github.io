@@ -157,11 +157,6 @@
       </tags>
   </entry>
   <entry>
-    <title>小鲸鱼Docker：Docker入门</title>
-    <url>/%E5%B0%8F%E9%B2%B8%E9%B1%BCDocker%EF%BC%9ADocker%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
     <title>分布式即时聊天解决方案</title>
     <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
     <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
