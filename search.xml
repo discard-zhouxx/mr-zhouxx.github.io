@@ -1,611 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>MySQL冲冲冲：MySQL索引的从认识到实战</title>
-    <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>MySQL是我们常用的关系型数据库，小巧灵活。在开发过程中，当我们的数据量超过一定程度的时候，就需要我们使用索引来优化查询和排序的速度，这篇文章就来尽量全面的讲一讲索引。</p>
-<a id="more"></a>
-
-<h2 id="索引简介"><a href="#索引简介" class="headerlink" title="索引简介"></a>索引简介</h2><p> MySQL官方给索引一个定义——帮助MySQL高效获取数据的数据结构。注意，这里得到了一个关键字，索引是一种数据结构，一种帮助我们更快速获取数据的数据结构。</p>
-<p>我们初学MySQL时并没有使用索引，查找数据需要全表扫描，也就是从第一行开始扫描，直到最后一行。如果我们表里数据非常大，上千万行的数据，全表扫面会特别慢，这个时候如果有一个“目录”来帮助我们快速定位数据就好了。</p>
-<p>这个时候就出现了索引，我们可以把索引对比成新华字典的目录，目录是不是一种独特的数据结构呢？目录由拼音+页数组成，通过对应拼音的页数我们可以快速找到想要的数据。如果没有目录，我们需要从a开始，一个字一个字的对比（MySQL这本字典可不是按规律排的），直到找到我们想查的字，如果想查a还好，想查zhouxx可咋整。</p>
-<p>通过这些描述我们知道了，WHERE条件后面需要查找的关键字可以使用索引。还有什么可以使用索引优化呢？索引还有一个别名：排好序的快速查找数据结构。所以我们在ORDER BY中也可以使用索引来优化结果。</p>
-<h2 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h2><p>上面讲过了索引是一种数据结构，所以索引是什么样的数据结构呢？     </p>
-<p>先说结果：索引是一种排序树，这里有同学就开始疑惑了，排序树是个嘛玩意？</p>
-<h3 id="排序树是啥？"><a href="#排序树是啥？" class="headerlink" title="排序树是啥？"></a>排序树是啥？</h3><p>排序树又称搜索树、查找树。看名字就知道这个和索引高度相似，索引是干嘛的？一种排好序的快速查找数据结构。这两个东西就对应起来了，那么我们只要学好了这个什么排序树就能更加接近MySQL索引的底层原理了。</p>
-<p>讲排序树之前需要大家知道一些储备知识：树的数据结构特点、二叉树的相关知识。</p>
-<p>排序树的叉不确定，本文就按照最简单的二叉排序树来讲，核心知识都是相同的，多叉排序树大家自己类比就好。</p>
-<p>先说二叉排序树的定义：</p>
-<ol>
-<li>若左子树不为空，则左子树所有结点的值均小于该结点的值</li>
-<li>若右子树不为空，则右子树所有结点的值均小于该结点的值</li>
-<li>任意结点的左右子树也是二叉排序树</li>
-<li>没有键值相等的结点</li>
-</ol>
-<p>是不是读起来很绕口？</p>
-<p>我们来看一个例子：</p>
-<p>有一串数字——8 6 5 4 7 2 3 1 9，我们怎么生成一个二叉搜索树呢？</p>
-<p>首先取出数字8作为根结点，随后下一个数字为6，比8小，所以我们把6作为8的左结点</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105612632.png" alt="image-20200725105612632"></p>
-<p>再取出一个数字5，比8小，可是8已经有左子结点了，再对比8的左子结点6，比6小，所以我们把数字5放在6的左子结点。同理数字4也是一样，现在树变成了这样：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105533427.png" alt="image-20200725105533427"></p>
-<p>这时来了一个不素之客7，比8小，又比6大，那么我们就把它放到6的右子结点：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105514803.png" alt="image-20200725105514803"></p>
-<p>按照这种从根结点逐步向下扩展，并且遵循小的放左边、大的放右边这个规律，最终生成的树就是二叉搜索树。</p>
-<p>例子中最终生成树为：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105359707.png" alt="image-20200725105359707"></p>
-<p>好吧，例子举得不好，这个树太丑了……数字是我随便敲的，长成这样我也没办法……</p>
-<p>那重新来一个例子吧，例子二：</p>
-<p>5 6 3 4 7 1 9 2 8</p>
-<p>生成树为：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725110331135.png" alt="image-20200725110331135"></p>
-<p>这个树就好看多了……</p>
-<p>那么这个树有什么作用呢？或者说为什么叫做查找树呢？</p>
-<p>我们使用第二个例子，假设需要查找数字2，从根结点查找开始，比5小，那么我们右边的树（因为排序树右边的都比根结点大）就不看了，只看左边的子树。查找到3，比3小，右边不看。查找到1，比1大，左边不看（虽然左边没结点了），只看右边，查找到2，完成查找。</p>
-<p>一共查找了4次，如果不使用二叉查找树呢？我们需要查找7次。</p>
-<p>有同学说了，你这不对，看似查找很少，其实你有一段时间浪费在生成二叉树上了。没错，这就是索引的弊端了，索引需要在修改数据的时候额外付出一点代价，但是这个代价是值得的。</p>
-<p>上面的也看到了，有的二叉查找树可能严重偏枝，也就是聚集在左子树或者右子树，排序树退化成一个链表，这样我们查找起来时间复杂度还是O(n)（如果根结点是最大值，我们需要查找最小值）。</p>
-<p>也就是9 8 7 6 5 4 3 2 1 这一串数字生成的二叉查找树。</p>
-<p>于是为了解决该问题，大佬们又设计了一个新的树形数据结构：B树，也叫做平衡树。</p>
-<h3 id="平衡树又是啥？"><a href="#平衡树又是啥？" class="headerlink" title="平衡树又是啥？"></a>平衡树又是啥？</h3><p>平衡树具有一下特性：</p>
-<ol>
-<li>具有查找树的所有特性</li>
-<li>每个结点的左子树和右子树高度差小于等于1</li>
-</ol>
-<p>这两个特性使得二叉平衡树的查找的时间复杂度总能保持最坏情况下为O(log n)，实现二叉平衡树的算法也有很多：AVL、红黑树、Treap等等，希望大家自行查询学习。</p>
-<p><strong>B树：</strong>B树属于平衡树的一种，又称为平衡多路查找树。我们来认识一下B树，《算法导论》中是这样写的B树是为磁盘或其他存取的辅助存储设备而设计的一种平衡搜索树，类似于红黑树，但是在降低磁盘I/O的操作树方面更好一点，许多数据库系统使用B树或者B树的变种来存储信息。</p>
-<p>《算法导论》中给出了B树的精确定义：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
-<p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
-<p>怎么构建B树请大家自行查询，因为不画图听不太明白，画图我又太懒……</p>
-<p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
-<p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
-<p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
-<p>我们看到定义中B树是每个结点都存放多个数据，B+树不同，B+树只有叶子结点存放数据，并且任何非叶子结点都会在叶结点上再次出现一次，更加丧心病狂的是把所有叶子结点从左到右链接了起来（所有叶子结点自成链表），所以我们扫描的时候只需要从第一个叶子扫描到最后一个叶子结点就行了，显然这种更适合数据库索引。</p>
-<p>除此之外，B树的查找性能不稳定，有可能在第一个结点就查找到了，也有可能</p>
-<p>来一张B+树的图：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
-<p>总结一下奇葩的B+树特点：</p>
-<ol>
-<li>父结点存放的元素都在子结点重复出现，因为此特性，叶子结点就包含了整个树的所有元素</li>
-<li>叶子结点从左到右依次链接，形成一个有序链表</li>
-</ol>
-<h2 id="B-树查找演示"><a href="#B-树查找演示" class="headerlink" title="B+树查找演示"></a>B+树查找演示</h2><p>上面简单讲了B+树的特性，回想一下我们对MySQL中索引的概况——排好序的快速查找数据结构。</p>
-<p>我们来演示一下B+树怎么快速的查找：</p>
-<p>假设我们查找数据：3</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
-<p>从根结点开始，3&lt;8，我们要查找的数据在最左子树，也就是258所在的结点。3&gt;2并且3&lt;5，我们要查找的数据在中间结点，也就是3,5所在的结点，随后成功找到3。</p>
-<p>有同学要问了，如果我查找的数字是5呢？5可是在258中出现过的数字，我怎么知道是在中间结点还是最右结点呢？同学们，你们有没有发现B+树父结点的数字会被继承给子结点，并且继承过来的数字对于子结点来说都是最大的值。当然不一定每个B+树都是继承最大的值，也可以是最小结点。所以查找的元素在非叶子结点的时候需要我们查找该值左边的子树。</p>
-<p>接下来给大家演示一个神奇的操作，区间查找。</p>
-<p>假如我们需要查找一个区间的值：6~11</p>
-<p>我们会先查找6，然后按照叶子结点之间的链表，往下遍历到13（不确定有没有多个11，遍历到13停止）。</p>
-<p>相对于B树来说，B+树作为数据库索引真是太好用了。</p>
-<h2 id="索引实战"><a href="#索引实战" class="headerlink" title="索引实战"></a>索引实战</h2><p>讲了那么多理论知识，终于到实战了。、</p>
-<p>建表之后创建索引使用命令：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE INDEX index_name ON my_table(column_name);</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>或者</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE my_table ADD [UNIQUE] INDEX index_name(column_name);</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>建表的时候使用命令：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE mytable(  </span><br><span class="line">    ID INT NOT NULL,   </span><br><span class="line">    username VARCHAR(16) NOT NULL,  </span><br><span class="line">    INDEX [indexName] (username(length))  </span><br><span class="line">); </span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>我们需要注意两个事情：</p>
-<ol>
-<li>创建索引需要占用额外的空间，请保持磁盘空间充足</li>
-<li>创建索引会对全表加锁，请在业务空闲时间创建，最好在程序规划的情况下创建</li>
-</ol>
-<p>删除索引：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">DROP INDEX my_index ON tablename；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>或者</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE table_name DROP INDEX index_name;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>查看索引：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SHOW INDEX FROM my_table;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="什么时候该用索引"><a href="#什么时候该用索引" class="headerlink" title="什么时候该用索引"></a>什么时候该用索引</h3><p>上面我们学习过了，索引需要额外的插入时间，但是可以大幅度减缓我们的查询和排序时间。</p>
-<p>由此我们可以得知，在频繁读取的业务表上增加索引，对频繁作为限定条件的列增加索引。除此之外，还有一些建立索引的建议：</p>
-<ol>
-<li>主键自动建立唯一索引</li>
-<li>WHERE和ORDER BY经常用到的列增加索引</li>
-<li>高并发情况下建立索引</li>
-<li>经常用于聚合函数的列建立索引</li>
-</ol>
-<p>对几乎不读或者少读的表、修改增加删除频繁的表酌情考虑不加索引。总结如下：</p>
-<ol>
-<li>经常修改删除的不建立索引</li>
-<li>有大量重复列的不建立索引</li>
-<li>表记录太少的不建立索引，不到1000索引无关紧要</li>
-</ol>
-<h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
-<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。注意，这个索引是自动建立的。</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>唯一索引：</strong> 建立索引的列不允许重复值，但是可以为空</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD UNIQUE index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>普通索引：</strong>看名字就知道，没有任何限制的普通索引</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>全文索引：</strong>使用大文本对象的列需要用到的索引</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD FULLTEXT INDEX ft_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>组合索引：</strong>利用多个列进行组合构建的索引，列中不允许有空值</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>值得注意的是组合索引，其遵循最左原则，也就是我们创建的这个索引不是col1、col2、col3随便都能使用的，这个索引只有查询为col1、col1+col2、col1+col2+col3才能使用，而像col2+col1就不能使用，一定要记住查询的顺序。</p>
-<p>并且，使用组合索引的时候可能导致因为列名太长而导致索引的key太大，影响性能，在允许的情况下使用col1(n)来取列名的前n个字符。</p>
-<h3 id="索引失效！"><a href="#索引失效！" class="headerlink" title="索引失效！?"></a>索引失效！?</h3><p>没错，你建立了索引不是就万事大吉了，很有可能你写的SQL不规范导致你的索引失效，也就是白建立索引了。</p>
-<p>有以下几种情况需要注意：</p>
-<ol>
-<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
-</li>
-<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
-</li>
-<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
-</li>
-<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
-</li>
-<li><p>WHERE中索引列有计算、使用了函数会导致索引失效</p>
-</li>
-<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
-</li>
-<li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
-</li>
-<li><p>MySQL觉得全表扫描更快的时候</p>
-</li>
-</ol>
-<p>这里放一张官方的图，关于索引失效的案例可以看我下一篇博客。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
-<ol>
-<li>什么是索引？为什么要有索引？</li>
-<li>从二叉排序树到B树再到B+树</li>
-<li>MySQL索引的原理是什么？</li>
-<li>B+树怎么查找范围和单行</li>
-<li>索引的使用环境</li>
-<li>MySQL有哪些索引</li>
-<li>索引失效的场景</li>
-</ol>
-<p>这两天身体有点不舒服，博客写的质量肯定不如从前。过段时间要去上海找工作了，在家沉淀蛮久了。MySQL的相关知识还是继续更下去，再更个两篇就准备去上海了，祝我好运。</p>
-]]></content>
-      <categories>
-        <category>MySQL</category>
-      </categories>
-      <tags>
-        <tag>MySQL</tag>
-        <tag>索引</tag>
-        <tag>数据库</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis学习笔记（一）：Redis基础入门</title>
-    <url>/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong> 在实际开发过程中，我们会经常用到Redis，作为一个高速缓存数据库，我们该从哪里开始学习呢？本文参考Redis文档作为大纲编写，从这篇博客开始开辟Redis这个高速公路。</p>
-<a id="more"></a>
-
-<h2 id="Redis是个啥？"><a href="#Redis是个啥？" class="headerlink" title="Redis是个啥？"></a>Redis是个啥？</h2><p>Redis本质上是一个以key-value存储的数据库。那么key-value数据库可太多了，我们为什么都用redis呢？</p>
-<p>因为Redis是一个内存数据库，并且支持数据持久化，这里解释一下数据持久化。</p>
-<p><strong>数据持久化：</strong>其实这个词学过数据库的都会知道什么意思，但是照顾下初学者（顺便凑凑字数）还是说一说。我们以前的程序都是在内存玩玩，包括我们第一个程序HelloWorld也好，各种排序算法也好，这些东西都是在内存中的。只要我们关闭程序或者计算机断电，所有的东西就都没了（参考老版本的Word文档）。那么我们的数据存在哪里才不会受到这种限制呢？那当然是硬盘啦！像Mysql、Oracle这种就是将数据存进硬盘中，那么问题来了，硬盘它读写速度慢啊！访问量一上去，读写速度直接成为系统瓶颈。于是有大佬想出一个办法，我把常用数据存在内存中不就行了吗？Redis就在这种背景下横空出世。</p>
-<p><strong>Redis的优势</strong>： 刚才讲到Redis的出生背景，可能有些人开始疑惑了，这不是开倒车吗？刚说完数据持久化，你就把数据放到内存了。万一服务器断电，数据不就没了？大佬毕竟是大佬，只要大佬高可用做的好，灾难就追不上大佬。Redis支持主从模式的数据备份，主挂了，我还有从呢！Redis支持数据持久化，可以把数据存进硬盘中，等到重启的时候再拿出来用。（大胆猜测下，向Redis写入数据时，Redis需要做三件事：存数据到主节点内存；同步数据到从节点；同步数据到硬盘。我们在学习过程中再看到底是不是这样。）</p>
-<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><p>入门第一步当然是先安装主角啦！进入<a href="https://redis.io/" target="_blank" rel="noopener">Redis官网</a>寻找Download关键字，看到Download相关的点进去就完事了。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709100113889.png" alt="image-20200709100113889"></p>
-<p>点击一下，直接就下载了。默认时linux版本的gz文件，如果你想下载windows版本的可以在这里<a href="https://github.com/tporadowski/redis/releases" target="_blank" rel="noopener">gayhub</a>下载安装。我这里有一台Linux服务器，我就使用linux版本了。希望大家有条件的可以创建虚拟机来操作Linux。</p>
-<p>偷偷告诉大家一个小技巧，win10自带的Powershell可以直接使用ssh/scp来链接服务器或者上传文件。</p>
-<p>我这里使用的ssh工具是Termius，好用倒是没多好用，就是界面美观。scp就用Powershell了。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709102039501.png" alt="image-20200709102039501"></p>
-<p>不得不说微软现在越来越开放了，像VS Code、Powershell等都支持跨平台了，我的青春结束了。</p>
-<p>来到服务器，在/root目录运行解压redis安装包</p>
-<blockquote>
-<p>tar -zxvf  redis-6.0.5.tar.gz</p>
-</blockquote>
-<p>进入目录并且编译</p>
-<blockquote>
-<p>cd redis-6.0.5/ &amp;&amp; make</p>
-</blockquote>
-<p>如果编译期间报错，那么就是你的gcc版本出现问题，两种解决方案：升级gcc；使用更低的Redis版本；</p>
-<p>*注意！生产环境中不可擅自升级gcc，凡事先问运维可不可以升级！</p>
-<p>我这里选择升级gcc，按顺序运行这些命令，然后</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">yum install -y cpp</span><br><span class="line">yum install -y binutils</span><br><span class="line">yum install -y glibc</span><br><span class="line">yum install -y glibc-kernheaders</span><br><span class="line">yum install -y glibc-common</span><br><span class="line">yum install -y glibc-devel</span><br><span class="line">yum install -y gcc</span><br><span class="line">yum install -y make</span><br><span class="line"></span><br><span class="line">yum -y install centos-release-scl</span><br><span class="line">yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils</span><br><span class="line">scl enable devtoolset-9 bash</span><br><span class="line"></span><br><span class="line">echo "source /opt/rh/devtoolset-9/enable" &gt;&gt;/etc/profile</span><br></pre></td></tr></table></figure>
-
-<p>运行命令</p>
-<blockquote>
-<p>src/redis-server</p>
-</blockquote>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709111549533.png" alt="image-20200709111549533"></p>
-<p>出现这个就说明Redis的server端启动起来了，可以通过redis内置的一个客户端与服务端进行交互。</p>
-<p>因为这个被占用了，另开一个ssh链接。</p>
-<p>运行命令</p>
-<blockquote>
-<p>src/redis-cli</p>
-</blockquote>
-<p>这个时候进入了redis命令行模式，我们输入set的时候，redis会自动给我们提示</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709112032802.png" alt="image-20200709112032802"></p>
-<p>小声bb：Mysql赶紧跟人家学学！</p>
-<p>然后，在命令行输入</p>
-<blockquote>
-<p>set hello world</p>
-</blockquote>
-<p>输出OK，表示我们已经完成了key-value的添加</p>
-<p>输入</p>
-<blockquote>
-<p>get hello</p>
-</blockquote>
-<p>输出 “world”</p>
-<p>至此一个简单的测试用例就完成了。如果你觉得安装redis还需要使用虚拟机有点麻烦，并且你不想redis占用资源，那么你可以通过<a href="https://try.redis.io/" target="_blank" rel="noopener">在线Redis</a>，来学习Redis。</p>
-<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><p>Redis的配置文件是位于安装目录下的<strong>redis.conf</strong>文件，可以通过Config来查看或者配置Redis。</p>
-<p>格式为：</p>
-<blockquote>
-<p>CONFIG GET CONFIG_NAME</p>
-</blockquote>
-<p>例如我们可以输入 CONFIG GET * 来查看所有的配置</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709125521604.png" alt="image-20200709125521604"></p>
-<p>从这里们可以看出配置文件的结构是两行为一个配置，奇数行是配置名，这个奇数行下面的偶数行是该配置项的值。</p>
-<p>也就是</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;配置名xxx&quot;</span><br><span class="line">2) &quot;xxx的值&quot;</span><br></pre></td></tr></table></figure>
-
-<p>我们会在后面的知识讲解这些配置项的含义。</p>
-<p>先使用CONFIG GET PORT查看redis日志的等级</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;notice&quot;</span><br></pre></td></tr></table></figure>
-
-<p>使用CONFIG SET CONFIG_NAME CONFIG_VALUE 的格式可以设置配置项的值，例如</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG SET loglevel warning</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
-
-<p>再查看的时候结果就变了。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;warning&quot;</span><br></pre></td></tr></table></figure>
-
-<p>题外话：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Warning: since Redis is pretty fast an outside user can try up to 150k passwords per second against a good box. This means that you should use a very strong password otherwise it will be very easy to break.</span><br><span class="line">因为redis速度太快，所以暴力破解密码也很快，如果你的redis地址暴露，数据安全岌岌可危。</span><br></pre></td></tr></table></figure>
-
-<h2 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h2><p>Redis支持五种基本的数据结构：</p>
-<p><strong>String：</strong>这是Redis中最基本的元素，它不仅仅可以存储我们日常中的字符串，它还能存储一些音乐、图片，甚至序列化之后的Java对象(你想到了什么？)，一个String最多可以存储<strong>512MB</strong>的内容。</p>
-<blockquote>
-<p>SET url “blooog.top”</p>
-<p>OK</p>
-<p>GET url</p>
-<p>“blooog.top”</p>
-</blockquote>
-<p><strong>Hash：</strong> Redis中的Hash是一系列键值对的集合，类似于Java中的Map，Hash本质上是String类型的field和String类型的value的映射表，一个Hash映射表可以存储2<sup>32</sup> -1个键值对。</p>
-<p>我们在Redis命令行敲上HMSET 出现一串提示：</p>
-<blockquote>
-<p>HMSET key field value [field value ……]</p>
-</blockquote>
-<p>根据这个结构我们输入一个Hash</p>
-<blockquote>
-<p>HMSET user:admin name zhouxx url blooog.top post redis</p>
-</blockquote>
-<p>然后使用命令</p>
-<blockquote>
-<p>HGETALL user:admin</p>
-</blockquote>
-<p>输出：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;name&quot;</span><br><span class="line">2) &quot;zhouxx&quot;</span><br><span class="line">3) &quot;url&quot;</span><br><span class="line">4) &quot;blooog.top&quot;</span><br><span class="line">5) &quot;post&quot;</span><br><span class="line">6) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
-
-<p><strong>List：</strong> 类似于数组，里面可以存储 2<sup>32</sup> -1个String类型的元素，使用LPUSH命令可以进行存储，语法也比较简单，直接把要存进去的元素写在后面就行了。</p>
-<p>例如：</p>
-<blockquote>
-<p>LPUSH exlist zhouxx blooog.top redis</p>
-</blockquote>
-<p>取出元素可以使用LRANGE命令</p>
-<blockquote>
-<p>LRANGE exlist 0 5</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
-
-<p>注意，List中的顺序和们输入的顺序是相反的，为什么会这样呢？因为我们使用的是LPUSH，也就是按照输入的顺序从List左边插入。</p>
-<p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
-<p>使用SADD KEY ELE添加元素，例如：</p>
-<blockquote>
-<p>SADD exset zhouxx</p>
-<p>SADD exset blooog.top</p>
-<p>SADD exset redis</p>
-</blockquote>
-<p>使用SMAMERS zhouxx命令查看集合中的东西</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;zhouxx&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
-
-<p>同样的，Set中也可以存放2<sup>32</sup> -1个String类型的元素。</p>
-<p>注意：Set中仅能存放不同的元素，第二次插入的相同元素会无效。</p>
-<p><strong>Zset：</strong> 有序集合，Zset和Set相似，都不允许插入相同的元素，不同的是Zset中每个元素都有一个Score用来代表权值，Redis通过Score来进行排序。默认为正序，并且Score可以重复。</p>
-<p>使用 ZADD KEY SCORE ELE添加元素，例如：</p>
-<blockquote>
-<p>ZADD exzset 12.12 zhouxx</p>
-<p>ZADD exzset 11.11 blooog.top</p>
-<p>ZADD exzset 6.18 redis</p>
-</blockquote>
-<p>使用ZRANGEBYSCORE KEY START END命令读取SCORE区间内的元素</p>
-<blockquote>
-<p>ZRANGEBYSCORE  exzset 6.18 12.12</p>
-</blockquote>
-<p>结果如下：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
-
-<p>可以看出这个范围要求是双向闭区间。</p>
-<h2 id="Redis和它的二百命令"><a href="#Redis和它的二百命令" class="headerlink" title="Redis和它的二百命令"></a>Redis和它的二百命令</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
-<p>命令还是很多的（这个是真的有！），据官网上说，Redis有二百多条命令。</p>
-<p>Redis官方把根据命令负责的模块，将命令分为多个命令集，有了分类再掌握命令就方便了。官网也提供了快速查询的通道。</p>
-<p>英文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
-<p>中文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
-<p>中文版的翻译不是很全，但是一些经常用的命令都做了翻译。</p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>SpringBoot学习笔记（一）：SpringBoot入门</title>
-    <url>/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringBoot%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong> SpringBoot究竟是何方神圣？Spring开发人员使用SpringBoot之后为何热泪盈眶？JavaEE生态圈为何对SpringBoot狂舔不止？这一切的原因究竟是Spring不够骚了，还是你SpringBoot有点飘了？接下来，欢迎收看我的SpringBoot学习笔记之SpringBoot入门，让我们一起走进SpringBoot的内心世界。</p>
-<a id="more"></a>
-
-<h2 id="SpringBoot简介"><a href="#SpringBoot简介" class="headerlink" title="SpringBoot简介"></a>SpringBoot简介</h2><p>记者：您好，SpringBoot，请问您可以简单介绍下自己吗？</p>
-<p>SB（SpringBoot的简称）：大家好，我可以轻松创建一个基……</p>
-<p>记者：停，能不能简单通俗点说？</p>
-<p>SB：啊，大家好，我是Spring全家桶中的一个成员，我今年六岁啦！</p>
-<p>记者突然一把扯掉SB的面具，面具下露出Spring的脸。</p>
-<p>记者：哼，果然你就是Spring。</p>
-<p>SB：才不是呢！我的底层虽然是Spring，但是我更加简单，比如你们说Spring配置文件一大坨，我就尽量给你们自动配置，你们说项目部署到Servlet容器太麻烦了，我就自己内嵌一个Servlet容器，而且开场白我就说了，我可以轻松的构建一个Spring应用……</p>
-<p>记者：这样啊，那你都可以做什么呢？</p>
-<p>SB：Spring能干的我全都能干，而且更简单，一站式懂吗？就是那种，有我一个人就够了，不用添加什么乱七八糟的依赖、配置文件。</p>
-<p>记者：既然你这么优秀，怎么还没取代Spring全家桶呢？</p>
-<p>SB：阿这……因为我毕竟是Spring的一种实现方式，这么简单的我，取代Spring是迟早的事，但是单独一个我并不能做什么惊天动地的大事，只有联合我的Spring全家桶中的兄弟姐妹才能在JavaEE圈中称王称霸，毕竟我在Spring生态圈中人缘最好，和第三方框架关系也不错！至于Spring那个老东西，不会还有公司在用吧？不会吧？不会吧？</p>
-<p>记者（面向博主）：博主，你被公司开除了。</p>
-<p>博主：现在我来总结一下，SpringBoot是Spring的一个变种，其实本质上还是Spring那一套，它可以做到一站式开发，在开发前简化项目依赖，开发过程中简化配置，开发完成后简化部署。不仅能够和Spring全家桶完美契合，还能和主流第三方框架进行整合。乐观地说，SpringBoot取代Spring只是时间问题，然而，SpringBoot使用了大量的Spring提供的API，如果不学习Spring的话，SpringBoot也就只能停留在比较浅的层面。</p>
-<h2 id="整一个HelloWorld"><a href="#整一个HelloWorld" class="headerlink" title="整一个HelloWorld"></a>整一个HelloWorld</h2><p>程序员的老规矩，接触新技术先整Helloworld。博主使用的是Idea（别问博主是不是盗版了，学生可以白嫖！！），步骤会一步一步的贴出来，还搞不定的话……放张图与君共勉。<img src="https://gitee.com/vanbyz/images/raw/master/img/20200627110835.png" alt="20200627110835"></p>
-<p>永远有比我们更惨的人，他都能坚持下去，为什么我们不可以呢？</p>
-<p>首先开始第一步，打开我们的idea，创建一个Maven新项目（2020了，不会还有人不知道怎么创建Maven新项目吧？不会吧？）</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112301999.png" alt="image-20200627112301999"></p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112538113.png" alt="image-20200627112538113"></p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112758857.png" alt="image-20200627112758857">    ok，现在项目创建好了。既然是Maven项目，那么肯定要配置pom.xml文件啦。</p>
-<p>打开SpringBoot官网提供了快速开始的配置，那是相当方便啊。知道你们懒，我直接贴在下面。</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">parent</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.1.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>相比SSM框架中导入一大堆依赖来说是不是简单很多？</p>
-<p>在main目录下，我们建以下结构，包名自己取，但是欢迎照抄嘿嘿嘿。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627142632994.png" alt="image-20200627142632994"></p>
-<p>然后再根据下面的结构创建两个类，根包下的类命名需要注意一下，需要写成${项目名}Application：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627143809642.png" alt="image-20200627143809642"></p>
-<p>在SpringBootDemoApplication类中：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> top.blooog;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringBootDemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootDemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在HelloWorldController类中：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> top.blooog.controller;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RestController;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorldController</span> </span>&#123;</span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"HelloWorld"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里有小朋友要问了，是不是该配置Tomcat了？SpringBoot不屑一笑，你懂什么叫做可运行吗？</p>
-<p>直接运行SpringBootDemoApplication。</p>
-<p>看到控制台显示如下：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145252013.png" alt="image-20200627145252013"></p>
-<p>这一行中出现了熟悉的字眼——Tomcat，原来SpringBoot自带了一个Tomcat！现在我们去浏览器看一下效果。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145442925.png" alt="image-20200627145442925"></p>
-<p>不用一行配置文件，完成HelloWorld，请所有SSM框架的使用者们全体起立，现在这里是SpringBoot广场！开发狂喜，运维狂喜，前端流下羡慕的口水。</p>
-<p>HelloWorldController没什么说的，这是SpringMVC中的内容。</p>
-<p>值得我们注意的是SpringBootDemoApplication，该类使用了一个叫做@SpringBootApplication的注解，这个注解告诉SpringBoot，这是主配置类。那么@SpringBootApplication是什么呢？</p>
-<p>按住Ctrl，左键单击这个注解查看源代码。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Target</span>(&#123;ElementType.TYPE&#125;)</span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Inherited</span></span><br><span class="line"><span class="meta">@SpringBootConfiguration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan</span>(</span><br><span class="line">    excludeFilters = &#123;<span class="meta">@Filter</span>(</span><br><span class="line">    type = FilterType.CUSTOM,</span><br><span class="line">    classes = &#123;TypeExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">), @<span class="title">Filter</span>(</span></span><br><span class="line"><span class="class">    <span class="title">type</span> </span>= FilterType.CUSTOM,</span><br><span class="line">    classes = &#123;AutoConfigurationExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">)&#125;</span></span><br><span class="line"><span class="class">)</span></span><br></pre></td></tr></table></figure>
-
-<p>发现这是一堆注解的组合，前面四个不再详细说，这四个注解表示创建一个注解时这个注解的属性，它们注解的含义和用法可以参考<a href="https://www.jianshu.com/p/8738ce6bd771" target="_blank" rel="noopener">这篇博客</a> 。既然是组合，那么你也可以将后面的注解替代@SpringBootApplication使用，就变成了下面这样。当然，开发环境中你敢这样玩，那你是个狠人。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootConfiguration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan</span>(</span><br><span class="line">        excludeFilters = &#123;<span class="meta">@ComponentScan</span>.Filter(</span><br><span class="line">                type = FilterType.CUSTOM,</span><br><span class="line">                classes = &#123;TypeExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">        ), @<span class="title">ComponentScan</span>.<span class="title">Filter</span>(</span></span><br><span class="line"><span class="class">                <span class="title">type</span> </span>= FilterType.CUSTOM,</span><br><span class="line">                classes = &#123;AutoConfigurationExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">        )&#125;</span></span><br><span class="line"><span class="class">)</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">SpringBootDemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootDemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注解中需要注意的是@SpringBootConfiguration和@EnableAutoConfiguration。</p>
-<p><strong>@SpringBootConfiguration</strong>这个注解表示这个类是SpringBoot的配置类，追踪进去再看这个注解，发现它只有一个注解，那就是@Configuration，这个注解是Spring中的注解，该注解用于表示此类是一个配置类，实锤SpringBoot是Spring的封装版本。</p>
-<p><strong>@EnableAutoConfiguration</strong>这个注解是SpringBoot特有的注解，也是SpringBoot和Spring的最大区别之一，从名字就可以看出，这个注解实现了自动配置的功能。</p>
-<p>以上知识的详细解释，我在解析SpringBoot底层原理的时候再叭叭，等我们上手使用SpringBoot后，并且对SpringBoot有一定认识的时候再学习底层原理就能事半功倍，刚写完Hello World就搞底层原理，你是个什么神仙？</p>
-<h2 id="有没有更简单的HelloWorld"><a href="#有没有更简单的HelloWorld" class="headerlink" title="有没有更简单的HelloWorld?"></a>有没有更简单的HelloWorld?</h2><p>正所谓懒癌改变世界，有的人还觉得上面添加Maven配置太麻烦了，有没有更简单、更迅速构建SpringBoot的方法呢？还真有，除了手撸创建SpringBoot项目外，还有三种方法创建SpringBoot项目。</p>
-<ol>
-<li>官网下载</li>
-<li>STS（Spring推荐的IDE，其实就是Eclipse魔改版）在线构建</li>
-<li>Idea在线构建</li>
-</ol>
-<p>这里仅展示第三种方式，因为我很懒，展示三种实在太难为我了。</p>
-<p>首先打开我们的Idea，创建一个新项目。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185206771.png" alt="image-20200627185206771"></p>
-<p>然后关键的一步来了</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185419061.png" alt="image-20200627185419061"></p>
-<p>弹出来一个奇奇怪怪的设置界面</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190820425.png" alt="image-20200627190820425"></p>
-<p>小声bb：Group填自己的。我已经把上一个项目删掉了，所以我还是上一个项目的名字，你最好换一下。</p>
-<p>点击下一步后出现一个乱七八糟的界面，这个界面是选择场景启动器（场景启动器后面再说），先跟着我做</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190403890.png" alt="image-20200627190403890"></p>
-<p>点击下一步之后到了Idea项目设置的界面，点击完成</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190441384.png" alt="image-20200627190441384"></p>
-<p>进去之后你会非常惊喜的发现，所有东西都已经配置完成了，只需要创建一个HelloWorldController就可以了，具体的操作我就不再演示了。</p>
-<p>上述出现一个新名词叫场景启动器，什么是场景启动器呢？就是SpringBoot将某一场景中所需要用到的依赖打包，例如，我们需要web开发就会在依赖中添加一个叫做spring-boot-starter-web的场景启动器，如果需要测试呢？那么就添加对应的spring-boot-starter-test场景启动器。诸如此类的场景启动器还有很多，不仅有SpringBoot官方的启动器，很多第三方的应用或框架也提供了场景启动器，例如常用的mybatis框架也有SpringBoot的启动器。这些启动器除了打包一堆依赖之外，还添加了一些让人惊喜的小工具，比如web场景启动器内嵌了一个Servlet容器，可以让我们不用再部署到Tomcat。</p>
-<h2 id="SpringBoot的配置"><a href="#SpringBoot的配置" class="headerlink" title="SpringBoot的配置"></a>SpringBoot的配置</h2><p>上面讲了SpringBoot开发的到底有多方便，那么问题来了，我该怎么配置SpringBoot呢？比如我要配置Tomcat的监听端口号，总不能让我修改SpringBoot的源码把8080改成80吧？难道还是老样子用xml配置文件？SpringBoot可是说了零xml配置文件。于是SpringBoot默认使用properties文件配置SpringBoot，并且引入了另一种配置文件yml（迷惑行为）。使用这两种全局配置文件来取代SpringBoot中默认的配置。</p>
-<p>SpringBoot更加专注于约定，而非配置。什么意思呢？我们先来看一个例子：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context-param</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>contextConfigLocation<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 这里使用的是以spring*.xml的通配符方式加载配置的 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>classpath:applicationContext.xml<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">context-param</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>这是SSM框架中web.xml的一个例子。这里指定了Spring的配置文件的路径以及文件名，web容器通过这个路径和文件名去加载Spring的配置文件，这就是通过配置web.xml来配置组件。而SpringBoot中并没有web.xml文件，那么SpringBoot怎么知道我们的配置文件在哪呢？SpringBoot<strong>约定</strong>了几个目录：</p>
-<ol>
-<li>recourse目录</li>
-<li>recourse目录下的/config目录</li>
-<li>项目的根目录</li>
-<li>项目根目录下的/config目录</li>
-</ol>
-<p>并且将文件名也约定好了，全局配置文件名一定要叫application.properties或者application,yml（当然也可以取其他名字，这个后面会讲）。</p>
-<p>约定好之后，SpringBoot就可以根据这些目录和文件名进行扫描，排列组合也不过八种情况嘛，这些配置文件也是有优先级的，并且重复配置后，优先级低的配置文件不会覆盖优先级高的配置文件。优先级排序规则如下：</p>
-<ol>
-<li>项目根目录＞recourse目录</li>
-<li>/config目录＞不带/config目录</li>
-<li>application.properties&gt;application.yml</li>
-</ol>
-<p>耐人寻味的是，我们平常最常用的就是recourse目录下的application.yml，嗯……最低优先级。</p>
-<p>properties文件相信大家在开发中都使用过，最常用的就是log4j和数据库信息的配置，这里我们就不再赘述了，需要讲解的是yml文件，这个文件看起来和xml有点关系，盲猜下一代配置文件叫zml文件，下面就来讲解yml文件究竟怎么用。</p>
-<h3 id="YML文件"><a href="#YML文件" class="headerlink" title="YML文件"></a>YML文件</h3><p>YML相较于XML更加轻盈，来看一个例子</p>
-<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> </span><br><span class="line">    <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">host:</span> <span class="string">localhost</span></span><br></pre></td></tr></table></figure>
-
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">server</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">port</span>&gt;</span>8080<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">host</span>&gt;</span>localhost<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">server</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<figure class="highlight properties"><table><tr><td class="code"><pre><span class="line"><span class="meta">server.port</span>=<span class="string">8080</span></span><br><span class="line"><span class="meta">server.host</span>=<span class="string">localhost</span></span><br></pre></td></tr></table></figure>
-
-<p>三种方式对比后，高下立判。YML使用缩进来表示层级，相较于XML使用标签来表示层级显然更加轻盈，你看这区别像不像Java用大括号界定代码块和Python用缩进界定代码块？哦对，还有lisp圆括号，代码最后一页全都是))))))))))))))))))))))))))))))。相比较properties文件来说分层也更为明显，可读性显然比properties更加优秀，语法上反而和properties一样轻量。</p>
-<p>yml的基本语法规则如下：</p>
-<ol>
-<li>使用缩进表示层级关系</li>
-<li>不允许使用tab缩进，只能使用空格（IDE都有自动转换，放心tab）</li>
-<li>缩进空格不重要，只要同层级的保持空格数量相同即可，也就是说一个空格就可以表示层级</li>
-<li>大小写敏感</li>
-<li>基本语法为：key:(空格)value，空格千万必要忘记！</li>
-</ol>
-<p>yml的value有以下写法：</p>
-<ol>
-<li><p>字面量：包括字符串、数字、布尔值。字符串默认不需要双引号。</p>
-</li>
-<li><p>键值对：可以用来表示Map和对象。例如表示server有两个有两种写法：</p>
-<p> 直接表示：</p>
- <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> </span><br><span class="line">    <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">context:</span> <span class="string">hello</span></span><br></pre></td></tr></table></figure>
-
-<p> 行内表示：</p>
- <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> <span class="string">&#123;port:</span> <span class="number">8080</span><span class="string">,context:</span> <span class="string">hello&#125;</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>数组：嗯……就数组呗。</p>
-<p> 直接表示：</p>
- <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">animals:</span> </span><br><span class="line"> <span class="bullet">-</span> <span class="string">pig</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">cat</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">dog</span></span><br></pre></td></tr></table></figure>
-
-<p> 行内表示：</p>
- <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">animals:</span> <span class="string">[pig,cat,dog]</span></span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ol>
-<p>这三种数据结构可以任意组合，无限套娃。下面来演示怎么将配置文件读取到Java中。</p>
-<h3 id="读取配置文件到Java"><a href="#读取配置文件到Java" class="headerlink" title="读取配置文件到Java"></a>读取配置文件到Java</h3><p>先创建一个类——Cat。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,Cat&gt; friends;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//省略一堆getter和setter方法。</span></span><br><span class="line">    <span class="comment">//可以按alt+insert自行插入</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>再创建一个类——Host。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Host</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="comment">//省略getter和setter方法</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>再编辑application.yml配置文件</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">cat:</span><br><span class="line">  name: 蓝莓</span><br><span class="line">  age: <span class="number">21</span></span><br><span class="line">  host:</span><br><span class="line">    name: 周某某</span><br><span class="line">  toys:</span><br><span class="line">    - 毛球</span><br><span class="line">    - 逗猫棒</span><br><span class="line">    - 猫薄荷</span><br><span class="line">    - 周某某的头发</span><br><span class="line">  friends:</span><br><span class="line">    mary: <span class="string">"mary的主人"</span></span><br></pre></td></tr></table></figure>
-
-<p>代码写好了，SpringBoot问你，Cat类是哪个配置文件负责配置的？你说就那个cat:开始的呗，SpringBoot又说了，别的包也有一个Cat类（假装有），我不知道注入哪一个Cat，要不你给我打个注解？好让我知道哪个Cat需要我管理，还有这个Cat是哪段配置文件配置的。</p>
-<p>于是拿着SpringBoot给我们的两个注解，@ConfigurationProperties和@Component，放在了Cat的头上，Cat变成了这样：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(prefix = <span class="string">"cat"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,String&gt; friends;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以开始运行了！</p>
-<p>还是用我们的HelloWorld类测试运行（也可以使用测试类进行测试。）</p>
-<p>编辑HelloWorld类：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> Cat cat;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//为什么这样写可以看我的另一篇博客，白话Spring（一）</span></span><br><span class="line">    <span class="comment">//如果Bean有构造函数，那么可以省略@AutoWired : If a bean has one constructor, you can omit the @Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Cat cat)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cat = cat;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> cat.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果如下：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
-<h3 id="读取非全局配置文件到Java"><a href="#读取非全局配置文件到Java" class="headerlink" title="读取非全局配置文件到Java"></a>读取非全局配置文件到Java</h3><p>上面讲到怎么把application.yml配置文件读取到Java中，那如果我有很多配置文件呢？难道都要写进application中嘛？那全局配置文件得多臃肿，修改起来也不方便，所有我们需要将部分配置信息分离出一个单独的文件。</p>
-<p>SpringBoot中提供了一个@PropertySource注解，我们先看看这个注解都有什么东西</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Target</span>(&#123;ElementType.TYPE&#125;)</span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Repeatable</span>(PropertySources<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class"><span class="title">public</span> @<span class="title">interface</span> <span class="title">PropertySource</span> </span>&#123;</span><br><span class="line">    <span class="function">String <span class="title">name</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    String[] value();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">ignoreResourceNotFound</span><span class="params">()</span> <span class="keyword">default</span> <span class="keyword">false</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">String <span class="title">encoding</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    Class&lt;? extends PropertySourceFactory&gt; factory() <span class="keyword">default</span> PropertySourceFactory<span class="class">.<span class="keyword">class</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到这个注解提供了四个值</p>
-<ol>
-<li>name：名称 默认为空</li>
-<li>value：字符串数组，存放需要导入的配置文件路径。</li>
-<li>ignoreResourceNotFound：配置文件没找到，要不要告诉你。默认false，也就是告诉你。</li>
-<li>encoding：编码方式。</li>
-</ol>
-<p>通过上面的四个值我们可以看出这个注解可以加载多个配置文件，现在就来实战。</p>
-<p>将application.yml重命名为cat.yml，修改Cat类：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@PropertySource</span>(value = &#123;<span class="string">"classpath:cat.yml"</span>&#125;)</span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(<span class="string">"cat"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,String&gt; friends;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>刷新界面，仍旧可以读取。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
-<h3 id="SpringBoot多环境下的配置"><a href="#SpringBoot多环境下的配置" class="headerlink" title="SpringBoot多环境下的配置"></a>SpringBoot多环境下的配置</h3><p>上面我说到SpringBoot和我们约定好了一起把全局配置写到名为application文件中，我也提到了可以使用别的名字。那么什么时候我们需要使用别的名字呢？也就是SpringBoot运行环境不同的时候，我们需要不同的配置文件来配置SpringBoot，比如开发环境通常端口号是8080、生产环境端口号看老大心情。我们总不能每次换一个环境就把全局配置文件进行修改吧？估计改个几次配置文件就面目全非，找不到头尾。SpringBoot也不是那么死板的只读取application文件，多一个字少一个字都不行。</p>
-<p>SpringBoot允许我们添加多个命名为application-{环境名}.yml的application配置文件。</p>
-<p>例如：开发环境可以命名为：application-dev.yml或者application-dev.properties；生产环境可以命名为：application-proc.yml；测试环境可以命名为：application-test.yml</p>
-<p>我们先创建上面三个不同环境下的application配置文件，分别给这三个配置文件写上：</p>
-<p>application-dev.yml</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">6666</span></span><br></pre></td></tr></table></figure>
-
-<p>application-proc.yml</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">7777</span></span><br></pre></td></tr></table></figure>
-
-<p>application-test.yml</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">8888</span></span><br></pre></td></tr></table></figure>
-
-<p>对了，还有不带后缀的配置文件application.yml</p>
-<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">8080</span></span><br></pre></td></tr></table></figure>
-
-<p>现在直接运行，SpringBoot会使用不带后缀的配置文件来配置SpringBoot。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629115552251.png" alt="image-20200629115552251"></p>
-<p>可以看到端口号是application.yml中所配置的端口号。</p>
-<p>怎么告诉SpringBoot本次运行需要使用哪个配置文件呢？有以下几种方式：</p>
-<ol>
-<li><p>修改默认配置文件：</p>
-<p> 在application.yml文件中添加</p>
- <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">8080</span></span><br><span class="line">  </span><br><span class="line">spring:</span><br><span class="line">  profiles:</span><br><span class="line">    active: dev</span><br></pre></td></tr></table></figure>
-
-<p> 这里指定了使用后缀名为dev的配置文件，运行后结果：</p>
-<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629120126819.png" alt="image-20200629120126819"></p>
-</li>
-</ol>
-<pre><code>也就是SpringBoot会先去application.yml中看spring.profiles.active是否配置了另一个全局配置文件，如果配置了，就只使用相应后缀的配置文件。</code></pre><ol start="2">
-<li><p>命令行模式：</p>
-<p> 运行时直接加在运行jar包命令的后面 –spring.profiles.active=proc，这种方式牵扯到SpringBoot的打包和运行，不过我们在IDEA中也可以使用增加选项的方式来测试。</p>
-<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png" alt="image-20200629121313373"></p>
-<p> 在配置环境中添加–spring.profiles.active=proc（意思为生产环境）</p>
-<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121913696.png" alt="image-20200629121913696"></p>
-<p> 运行之后结果：</p>
-<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
-<p> 等等？我们在application.yml中配置了使用dev后缀的配置文件，命令行配置了proc后缀的配置文件，然而现在SpringBoot使用了proc的配置，OK，命令行方式会覆盖application中的配置。</p>
-</li>
-<li><p>虚拟机参数：</p>
-</li>
-</ol>
-<pre><code>![image-20200629121313373](https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png)
-
-在vm选项中添加-Dspring.profiles.active=test</code></pre><p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122816187.png" alt="image-20200629122816187"></p>
-<p>运行之后：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
-<p>嗯？怎么还是proc的端口？命令行选项没有删除，也就是命令行优先级高于虚拟机配置，把命令行选项删除，再次运行。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629123135251.png" alt="image-20200629123135251"></p>
-<p>这个就是test的端口号了，但是别忘了application.yml中的配置文件从来都没有删除过spring.profiles.active=dev这个配置项。</p>
-<p>所以这三种配置的优先级是：命令行选项 &gt; 虚拟机选项 &gt; application中配置</p>
-<h2 id="SpringBoot注册组件"><a href="#SpringBoot注册组件" class="headerlink" title="SpringBoot注册组件"></a>SpringBoot注册组件</h2><p>SpringBoot虽然可以使用@ImportRecourse注解导入Spring的xml配置文件（也就是创建Bean），但是SpringBoot不推荐这种办法，而是使用配置类来添加组件。</p>
-<p>首先需要告诉SpringBoot这是一个配置类也就是前面讲过的@Configuration注解，SpringBoot会在扫描的时候将这个配置类添加到自己的小本本里。SpringBoot得知这是个配置类之后，你需要告诉它这个配置类是做什么的，Spring提供了一个注解@Bean，这个注解标注在一个方法上，它会将标注方法的返回值注册进容器。</p>
-<p>来看一个例子：</p>
-<p>根包目录下创建一个config包，并创建一个ConfigDemo类。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Configuration</span>  <span class="comment">//标注为配置类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConfigDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Host <span class="title">host</span><span class="params">()</span></span>&#123;  <span class="comment">// 返回值类型是要注册的组件类，方法名是该组件在SpringBoot中的id</span></span><br><span class="line">        System.out.println(<span class="string">"创建Host成功"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Host(<span class="string">"小王"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>再魔改一下我们的HelloWorld类（controller包中的，曾经的HelloWorld成为了我们的测试类……）</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//注入组件</span></span><br><span class="line">    <span class="keyword">final</span> Host host;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Host host)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.host = host;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> host.getName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行后结果如下：</p>
-<p>控制台：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101604813.png" alt="image-20200629101604813"></p>
-<p>浏览器：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101623161.png" alt="image-20200629101623161"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>终于写完了……不算图一共五千字（废话有三千字），不知道有没有人能耐心看完……</p>
-<p>先来总结下知识点：</p>
-<ol>
-<li>SpringBoot是什么？</li>
-<li>HelloWorld怎么写？</li>
-<li>如何通过Spring向导创建SpringBoot项目？</li>
-<li>YML的基本语法以及怎么解析YML到Java？</li>
-<li>全局配置文件的优先级</li>
-<li>解析非全局配置文件到Java</li>
-<li>SpringBoot读取不同环境下的全局配置文件的三种方式及优先级</li>
-<li>通过配置类的方式注册组件到SpringBoot</li>
-</ol>
-<p>如果你看着这八条能够想起来步骤，那么这篇博客已经完成了它的使命，有任何不解请联系我，有问必答。</p>
-]]></content>
-      <categories>
-        <category>SpringBoot</category>
-      </categories>
-      <tags>
-        <tag>SpringBoot</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>MySQL冲冲冲：MySQL的EXPLAIN关键字和优化</title>
     <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%9A%84EXPLAIN%E5%85%B3%E9%94%AE%E5%AD%97%E5%92%8C%E4%BC%98%E5%8C%96/</url>
     <content><![CDATA[<p><strong>INTRO：</strong> MySQL针对SQL的执行情况给出了一个强大好用的工具：explain。它可以针对SELECT语句进行分析，并且输出SELECT语句的详细信息，以提供开发人员对SQL的优化，这篇博客就来教大家如何优化自己的SQL语句。</p>
@@ -888,6 +283,455 @@
       </tags>
   </entry>
   <entry>
+    <title>MySQL冲冲冲：MySQL索引的从认识到实战</title>
+    <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>MySQL是我们常用的关系型数据库，小巧灵活。在开发过程中，当我们的数据量超过一定程度的时候，就需要我们使用索引来优化查询和排序的速度，这篇文章就来尽量全面的讲一讲索引。</p>
+<a id="more"></a>
+
+<h2 id="索引简介"><a href="#索引简介" class="headerlink" title="索引简介"></a>索引简介</h2><p> MySQL官方给索引一个定义——帮助MySQL高效获取数据的数据结构。注意，这里得到了一个关键字，索引是一种数据结构，一种帮助我们更快速获取数据的数据结构。</p>
+<p>我们初学MySQL时并没有使用索引，查找数据需要全表扫描，也就是从第一行开始扫描，直到最后一行。如果我们表里数据非常大，上千万行的数据，全表扫面会特别慢，这个时候如果有一个“目录”来帮助我们快速定位数据就好了。</p>
+<p>这个时候就出现了索引，我们可以把索引对比成新华字典的目录，目录是不是一种独特的数据结构呢？目录由拼音+页数组成，通过对应拼音的页数我们可以快速找到想要的数据。如果没有目录，我们需要从a开始，一个字一个字的对比（MySQL这本字典可不是按规律排的），直到找到我们想查的字，如果想查a还好，想查zhouxx可咋整。</p>
+<p>通过这些描述我们知道了，WHERE条件后面需要查找的关键字可以使用索引。还有什么可以使用索引优化呢？索引还有一个别名：排好序的快速查找数据结构。所以我们在ORDER BY中也可以使用索引来优化结果。</p>
+<h2 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h2><p>上面讲过了索引是一种数据结构，所以索引是什么样的数据结构呢？     </p>
+<p>先说结果：索引是一种排序树，这里有同学就开始疑惑了，排序树是个嘛玩意？</p>
+<h3 id="排序树是啥？"><a href="#排序树是啥？" class="headerlink" title="排序树是啥？"></a>排序树是啥？</h3><p>排序树又称搜索树、查找树。看名字就知道这个和索引高度相似，索引是干嘛的？一种排好序的快速查找数据结构。这两个东西就对应起来了，那么我们只要学好了这个什么排序树就能更加接近MySQL索引的底层原理了。</p>
+<p>讲排序树之前需要大家知道一些储备知识：树的数据结构特点、二叉树的相关知识。</p>
+<p>排序树的叉不确定，本文就按照最简单的二叉排序树来讲，核心知识都是相同的，多叉排序树大家自己类比就好。</p>
+<p>先说二叉排序树的定义：</p>
+<ol>
+<li>若左子树不为空，则左子树所有结点的值均小于该结点的值</li>
+<li>若右子树不为空，则右子树所有结点的值均小于该结点的值</li>
+<li>任意结点的左右子树也是二叉排序树</li>
+<li>没有键值相等的结点</li>
+</ol>
+<p>是不是读起来很绕口？</p>
+<p>我们来看一个例子：</p>
+<p>有一串数字——8 6 5 4 7 2 3 1 9，我们怎么生成一个二叉搜索树呢？</p>
+<p>首先取出数字8作为根结点，随后下一个数字为6，比8小，所以我们把6作为8的左结点</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105612632.png" alt="image-20200725105612632"></p>
+<p>再取出一个数字5，比8小，可是8已经有左子结点了，再对比8的左子结点6，比6小，所以我们把数字5放在6的左子结点。同理数字4也是一样，现在树变成了这样：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105533427.png" alt="image-20200725105533427"></p>
+<p>这时来了一个不素之客7，比8小，又比6大，那么我们就把它放到6的右子结点：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105514803.png" alt="image-20200725105514803"></p>
+<p>按照这种从根结点逐步向下扩展，并且遵循小的放左边、大的放右边这个规律，最终生成的树就是二叉搜索树。</p>
+<p>例子中最终生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105359707.png" alt="image-20200725105359707"></p>
+<p>好吧，例子举得不好，这个树太丑了……数字是我随便敲的，长成这样我也没办法……</p>
+<p>那重新来一个例子吧，例子二：</p>
+<p>5 6 3 4 7 1 9 2 8</p>
+<p>生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725110331135.png" alt="image-20200725110331135"></p>
+<p>这个树就好看多了……</p>
+<p>那么这个树有什么作用呢？或者说为什么叫做查找树呢？</p>
+<p>我们使用第二个例子，假设需要查找数字2，从根结点查找开始，比5小，那么我们右边的树（因为排序树右边的都比根结点大）就不看了，只看左边的子树。查找到3，比3小，右边不看。查找到1，比1大，左边不看（虽然左边没结点了），只看右边，查找到2，完成查找。</p>
+<p>一共查找了4次，如果不使用二叉查找树呢？我们需要查找7次。</p>
+<p>有同学说了，你这不对，看似查找很少，其实你有一段时间浪费在生成二叉树上了。没错，这就是索引的弊端了，索引需要在修改数据的时候额外付出一点代价，但是这个代价是值得的。</p>
+<p>上面的也看到了，有的二叉查找树可能严重偏枝，也就是聚集在左子树或者右子树，排序树退化成一个链表，这样我们查找起来时间复杂度还是O(n)（如果根结点是最大值，我们需要查找最小值）。</p>
+<p>也就是9 8 7 6 5 4 3 2 1 这一串数字生成的二叉查找树。</p>
+<p>于是为了解决该问题，大佬们又设计了一个新的树形数据结构：B树，也叫做平衡树。</p>
+<h3 id="平衡树又是啥？"><a href="#平衡树又是啥？" class="headerlink" title="平衡树又是啥？"></a>平衡树又是啥？</h3><p>平衡树具有一下特性：</p>
+<ol>
+<li>具有查找树的所有特性</li>
+<li>每个结点的左子树和右子树高度差小于等于1</li>
+</ol>
+<p>这两个特性使得二叉平衡树的查找的时间复杂度总能保持最坏情况下为O(log n)，实现二叉平衡树的算法也有很多：AVL、红黑树、Treap等等，希望大家自行查询学习。</p>
+<p><strong>B树：</strong>B树属于平衡树的一种，又称为平衡多路查找树。我们来认识一下B树，《算法导论》中是这样写的B树是为磁盘或其他存取的辅助存储设备而设计的一种平衡搜索树，类似于红黑树，但是在降低磁盘I/O的操作树方面更好一点，许多数据库系统使用B树或者B树的变种来存储信息。</p>
+<p>《算法导论》中给出了B树的精确定义：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
+<p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
+<p>怎么构建B树请大家自行查询，因为不画图听不太明白，画图我又太懒……</p>
+<p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
+<p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
+<p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
+<p>我们看到定义中B树是每个结点都存放多个数据，B+树不同，B+树只有叶子结点存放数据，并且任何非叶子结点都会在叶结点上再次出现一次，更加丧心病狂的是把所有叶子结点从左到右链接了起来（所有叶子结点自成链表），所以我们扫描的时候只需要从第一个叶子扫描到最后一个叶子结点就行了，显然这种更适合数据库索引。</p>
+<p>除此之外，B树的查找性能不稳定，有可能在第一个结点就查找到了，也有可能</p>
+<p>来一张B+树的图：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>总结一下奇葩的B+树特点：</p>
+<ol>
+<li>父结点存放的元素都在子结点重复出现，因为此特性，叶子结点就包含了整个树的所有元素</li>
+<li>叶子结点从左到右依次链接，形成一个有序链表</li>
+</ol>
+<h2 id="B-树查找演示"><a href="#B-树查找演示" class="headerlink" title="B+树查找演示"></a>B+树查找演示</h2><p>上面简单讲了B+树的特性，回想一下我们对MySQL中索引的概况——排好序的快速查找数据结构。</p>
+<p>我们来演示一下B+树怎么快速的查找：</p>
+<p>假设我们查找数据：3</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>从根结点开始，3&lt;8，我们要查找的数据在最左子树，也就是258所在的结点。3&gt;2并且3&lt;5，我们要查找的数据在中间结点，也就是3,5所在的结点，随后成功找到3。</p>
+<p>有同学要问了，如果我查找的数字是5呢？5可是在258中出现过的数字，我怎么知道是在中间结点还是最右结点呢？同学们，你们有没有发现B+树父结点的数字会被继承给子结点，并且继承过来的数字对于子结点来说都是最大的值。当然不一定每个B+树都是继承最大的值，也可以是最小结点。所以查找的元素在非叶子结点的时候需要我们查找该值左边的子树。</p>
+<p>接下来给大家演示一个神奇的操作，区间查找。</p>
+<p>假如我们需要查找一个区间的值：6~11</p>
+<p>我们会先查找6，然后按照叶子结点之间的链表，往下遍历到13（不确定有没有多个11，遍历到13停止）。</p>
+<p>相对于B树来说，B+树作为数据库索引真是太好用了。</p>
+<h2 id="索引实战"><a href="#索引实战" class="headerlink" title="索引实战"></a>索引实战</h2><p>讲了那么多理论知识，终于到实战了。、</p>
+<p>建表之后创建索引使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE INDEX index_name ON my_table(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE my_table ADD [UNIQUE] INDEX index_name(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>建表的时候使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE mytable(  </span><br><span class="line">    ID INT NOT NULL,   </span><br><span class="line">    username VARCHAR(16) NOT NULL,  </span><br><span class="line">    INDEX [indexName] (username(length))  </span><br><span class="line">); </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>我们需要注意两个事情：</p>
+<ol>
+<li>创建索引需要占用额外的空间，请保持磁盘空间充足</li>
+<li>创建索引会对全表加锁，请在业务空闲时间创建，最好在程序规划的情况下创建</li>
+</ol>
+<p>删除索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">DROP INDEX my_index ON tablename；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE table_name DROP INDEX index_name;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>查看索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SHOW INDEX FROM my_table;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="什么时候该用索引"><a href="#什么时候该用索引" class="headerlink" title="什么时候该用索引"></a>什么时候该用索引</h3><p>上面我们学习过了，索引需要额外的插入时间，但是可以大幅度减缓我们的查询和排序时间。</p>
+<p>由此我们可以得知，在频繁读取的业务表上增加索引，对频繁作为限定条件的列增加索引。除此之外，还有一些建立索引的建议：</p>
+<ol>
+<li>主键自动建立唯一索引</li>
+<li>WHERE和ORDER BY经常用到的列增加索引</li>
+<li>高并发情况下建立索引</li>
+<li>经常用于聚合函数的列建立索引</li>
+</ol>
+<p>对几乎不读或者少读的表、修改增加删除频繁的表酌情考虑不加索引。总结如下：</p>
+<ol>
+<li>经常修改删除的不建立索引</li>
+<li>有大量重复列的不建立索引</li>
+<li>表记录太少的不建立索引，不到1000索引无关紧要</li>
+</ol>
+<h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
+<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。注意，这个索引是自动建立的。</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>唯一索引：</strong> 建立索引的列不允许重复值，但是可以为空</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD UNIQUE index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>普通索引：</strong>看名字就知道，没有任何限制的普通索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>全文索引：</strong>使用大文本对象的列需要用到的索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD FULLTEXT INDEX ft_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>组合索引：</strong>利用多个列进行组合构建的索引，列中不允许有空值</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>值得注意的是组合索引，其遵循最左原则，也就是我们创建的这个索引不是col1、col2、col3随便都能使用的，这个索引只有查询为col1、col1+col2、col1+col2+col3才能使用，而像col2+col1就不能使用，一定要记住查询的顺序。</p>
+<p>并且，使用组合索引的时候可能导致因为列名太长而导致索引的key太大，影响性能，在允许的情况下使用col1(n)来取列名的前n个字符。</p>
+<h3 id="索引失效！"><a href="#索引失效！" class="headerlink" title="索引失效！?"></a>索引失效！?</h3><p>没错，你建立了索引不是就万事大吉了，很有可能你写的SQL不规范导致你的索引失效，也就是白建立索引了。</p>
+<p>有以下几种情况需要注意：</p>
+<ol>
+<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
+</li>
+<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
+</li>
+<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
+</li>
+<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
+</li>
+<li><p>WHERE中索引列有计算、使用了函数会导致索引失效</p>
+</li>
+<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
+</li>
+<li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
+</li>
+<li><p>MySQL觉得全表扫描更快的时候</p>
+</li>
+</ol>
+<p>这里放一张官方的图，关于索引失效的案例可以看我下一篇博客。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
+<ol>
+<li>什么是索引？为什么要有索引？</li>
+<li>从二叉排序树到B树再到B+树</li>
+<li>MySQL索引的原理是什么？</li>
+<li>B+树怎么查找范围和单行</li>
+<li>索引的使用环境</li>
+<li>MySQL有哪些索引</li>
+<li>索引失效的场景</li>
+</ol>
+<p>这两天身体有点不舒服，博客写的质量肯定不如从前。过段时间要去上海找工作了，在家沉淀蛮久了。MySQL的相关知识还是继续更下去，再更个两篇就准备去上海了，祝我好运。</p>
+]]></content>
+      <categories>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+        <tag>索引</tag>
+        <tag>数据库</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>SpringBoot学习笔记（一）：SpringBoot入门</title>
+    <url>/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringBoot%E5%85%A5%E9%97%A8/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong> SpringBoot究竟是何方神圣？Spring开发人员使用SpringBoot之后为何热泪盈眶？JavaEE生态圈为何对SpringBoot狂舔不止？这一切的原因究竟是Spring不够骚了，还是你SpringBoot有点飘了？接下来，欢迎收看我的SpringBoot学习笔记之SpringBoot入门，让我们一起走进SpringBoot的内心世界。</p>
+<a id="more"></a>
+
+<h2 id="SpringBoot简介"><a href="#SpringBoot简介" class="headerlink" title="SpringBoot简介"></a>SpringBoot简介</h2><p>记者：您好，SpringBoot，请问您可以简单介绍下自己吗？</p>
+<p>SB（SpringBoot的简称）：大家好，我可以轻松创建一个基……</p>
+<p>记者：停，能不能简单通俗点说？</p>
+<p>SB：啊，大家好，我是Spring全家桶中的一个成员，我今年六岁啦！</p>
+<p>记者突然一把扯掉SB的面具，面具下露出Spring的脸。</p>
+<p>记者：哼，果然你就是Spring。</p>
+<p>SB：才不是呢！我的底层虽然是Spring，但是我更加简单，比如你们说Spring配置文件一大坨，我就尽量给你们自动配置，你们说项目部署到Servlet容器太麻烦了，我就自己内嵌一个Servlet容器，而且开场白我就说了，我可以轻松的构建一个Spring应用……</p>
+<p>记者：这样啊，那你都可以做什么呢？</p>
+<p>SB：Spring能干的我全都能干，而且更简单，一站式懂吗？就是那种，有我一个人就够了，不用添加什么乱七八糟的依赖、配置文件。</p>
+<p>记者：既然你这么优秀，怎么还没取代Spring全家桶呢？</p>
+<p>SB：阿这……因为我毕竟是Spring的一种实现方式，这么简单的我，取代Spring是迟早的事，但是单独一个我并不能做什么惊天动地的大事，只有联合我的Spring全家桶中的兄弟姐妹才能在JavaEE圈中称王称霸，毕竟我在Spring生态圈中人缘最好，和第三方框架关系也不错！至于Spring那个老东西，不会还有公司在用吧？不会吧？不会吧？</p>
+<p>记者（面向博主）：博主，你被公司开除了。</p>
+<p>博主：现在我来总结一下，SpringBoot是Spring的一个变种，其实本质上还是Spring那一套，它可以做到一站式开发，在开发前简化项目依赖，开发过程中简化配置，开发完成后简化部署。不仅能够和Spring全家桶完美契合，还能和主流第三方框架进行整合。乐观地说，SpringBoot取代Spring只是时间问题，然而，SpringBoot使用了大量的Spring提供的API，如果不学习Spring的话，SpringBoot也就只能停留在比较浅的层面。</p>
+<h2 id="整一个HelloWorld"><a href="#整一个HelloWorld" class="headerlink" title="整一个HelloWorld"></a>整一个HelloWorld</h2><p>程序员的老规矩，接触新技术先整Helloworld。博主使用的是Idea（别问博主是不是盗版了，学生可以白嫖！！），步骤会一步一步的贴出来，还搞不定的话……放张图与君共勉。<img src="https://gitee.com/vanbyz/images/raw/master/img/20200627110835.png" alt="20200627110835"></p>
+<p>永远有比我们更惨的人，他都能坚持下去，为什么我们不可以呢？</p>
+<p>首先开始第一步，打开我们的idea，创建一个Maven新项目（2020了，不会还有人不知道怎么创建Maven新项目吧？不会吧？）</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112301999.png" alt="image-20200627112301999"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112538113.png" alt="image-20200627112538113"></p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627112758857.png" alt="image-20200627112758857">    ok，现在项目创建好了。既然是Maven项目，那么肯定要配置pom.xml文件啦。</p>
+<p>打开SpringBoot官网提供了快速开始的配置，那是相当方便啊。知道你们懒，我直接贴在下面。</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">parent</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.1.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>相比SSM框架中导入一大堆依赖来说是不是简单很多？</p>
+<p>在main目录下，我们建以下结构，包名自己取，但是欢迎照抄嘿嘿嘿。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627142632994.png" alt="image-20200627142632994"></p>
+<p>然后再根据下面的结构创建两个类，根包下的类命名需要注意一下，需要写成${项目名}Application：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627143809642.png" alt="image-20200627143809642"></p>
+<p>在SpringBootDemoApplication类中：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> top.blooog;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringBootDemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootDemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在HelloWorldController类中：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> top.blooog.controller;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RequestMapping;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.RestController;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorldController</span> </span>&#123;</span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"HelloWorld"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里有小朋友要问了，是不是该配置Tomcat了？SpringBoot不屑一笑，你懂什么叫做可运行吗？</p>
+<p>直接运行SpringBootDemoApplication。</p>
+<p>看到控制台显示如下：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145252013.png" alt="image-20200627145252013"></p>
+<p>这一行中出现了熟悉的字眼——Tomcat，原来SpringBoot自带了一个Tomcat！现在我们去浏览器看一下效果。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627145442925.png" alt="image-20200627145442925"></p>
+<p>不用一行配置文件，完成HelloWorld，请所有SSM框架的使用者们全体起立，现在这里是SpringBoot广场！开发狂喜，运维狂喜，前端流下羡慕的口水。</p>
+<p>HelloWorldController没什么说的，这是SpringMVC中的内容。</p>
+<p>值得我们注意的是SpringBootDemoApplication，该类使用了一个叫做@SpringBootApplication的注解，这个注解告诉SpringBoot，这是主配置类。那么@SpringBootApplication是什么呢？</p>
+<p>按住Ctrl，左键单击这个注解查看源代码。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Target</span>(&#123;ElementType.TYPE&#125;)</span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Inherited</span></span><br><span class="line"><span class="meta">@SpringBootConfiguration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan</span>(</span><br><span class="line">    excludeFilters = &#123;<span class="meta">@Filter</span>(</span><br><span class="line">    type = FilterType.CUSTOM,</span><br><span class="line">    classes = &#123;TypeExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">), @<span class="title">Filter</span>(</span></span><br><span class="line"><span class="class">    <span class="title">type</span> </span>= FilterType.CUSTOM,</span><br><span class="line">    classes = &#123;AutoConfigurationExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">)&#125;</span></span><br><span class="line"><span class="class">)</span></span><br></pre></td></tr></table></figure>
+
+<p>发现这是一堆注解的组合，前面四个不再详细说，这四个注解表示创建一个注解时这个注解的属性，它们注解的含义和用法可以参考<a href="https://www.jianshu.com/p/8738ce6bd771" target="_blank" rel="noopener">这篇博客</a> 。既然是组合，那么你也可以将后面的注解替代@SpringBootApplication使用，就变成了下面这样。当然，开发环境中你敢这样玩，那你是个狠人。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootConfiguration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan</span>(</span><br><span class="line">        excludeFilters = &#123;<span class="meta">@ComponentScan</span>.Filter(</span><br><span class="line">                type = FilterType.CUSTOM,</span><br><span class="line">                classes = &#123;TypeExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">        ), @<span class="title">ComponentScan</span>.<span class="title">Filter</span>(</span></span><br><span class="line"><span class="class">                <span class="title">type</span> </span>= FilterType.CUSTOM,</span><br><span class="line">                classes = &#123;AutoConfigurationExcludeFilter<span class="class">.<span class="keyword">class</span>&#125;</span></span><br><span class="line"><span class="class">        )&#125;</span></span><br><span class="line"><span class="class">)</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">SpringBootDemoApplication</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootDemoApplication<span class="class">.<span class="keyword">class</span>,<span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注解中需要注意的是@SpringBootConfiguration和@EnableAutoConfiguration。</p>
+<p><strong>@SpringBootConfiguration</strong>这个注解表示这个类是SpringBoot的配置类，追踪进去再看这个注解，发现它只有一个注解，那就是@Configuration，这个注解是Spring中的注解，该注解用于表示此类是一个配置类，实锤SpringBoot是Spring的封装版本。</p>
+<p><strong>@EnableAutoConfiguration</strong>这个注解是SpringBoot特有的注解，也是SpringBoot和Spring的最大区别之一，从名字就可以看出，这个注解实现了自动配置的功能。</p>
+<p>以上知识的详细解释，我在解析SpringBoot底层原理的时候再叭叭，等我们上手使用SpringBoot后，并且对SpringBoot有一定认识的时候再学习底层原理就能事半功倍，刚写完Hello World就搞底层原理，你是个什么神仙？</p>
+<h2 id="有没有更简单的HelloWorld"><a href="#有没有更简单的HelloWorld" class="headerlink" title="有没有更简单的HelloWorld?"></a>有没有更简单的HelloWorld?</h2><p>正所谓懒癌改变世界，有的人还觉得上面添加Maven配置太麻烦了，有没有更简单、更迅速构建SpringBoot的方法呢？还真有，除了手撸创建SpringBoot项目外，还有三种方法创建SpringBoot项目。</p>
+<ol>
+<li>官网下载</li>
+<li>STS（Spring推荐的IDE，其实就是Eclipse魔改版）在线构建</li>
+<li>Idea在线构建</li>
+</ol>
+<p>这里仅展示第三种方式，因为我很懒，展示三种实在太难为我了。</p>
+<p>首先打开我们的Idea，创建一个新项目。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185206771.png" alt="image-20200627185206771"></p>
+<p>然后关键的一步来了</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627185419061.png" alt="image-20200627185419061"></p>
+<p>弹出来一个奇奇怪怪的设置界面</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190820425.png" alt="image-20200627190820425"></p>
+<p>小声bb：Group填自己的。我已经把上一个项目删掉了，所以我还是上一个项目的名字，你最好换一下。</p>
+<p>点击下一步后出现一个乱七八糟的界面，这个界面是选择场景启动器（场景启动器后面再说），先跟着我做</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190403890.png" alt="image-20200627190403890"></p>
+<p>点击下一步之后到了Idea项目设置的界面，点击完成</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200627190441384.png" alt="image-20200627190441384"></p>
+<p>进去之后你会非常惊喜的发现，所有东西都已经配置完成了，只需要创建一个HelloWorldController就可以了，具体的操作我就不再演示了。</p>
+<p>上述出现一个新名词叫场景启动器，什么是场景启动器呢？就是SpringBoot将某一场景中所需要用到的依赖打包，例如，我们需要web开发就会在依赖中添加一个叫做spring-boot-starter-web的场景启动器，如果需要测试呢？那么就添加对应的spring-boot-starter-test场景启动器。诸如此类的场景启动器还有很多，不仅有SpringBoot官方的启动器，很多第三方的应用或框架也提供了场景启动器，例如常用的mybatis框架也有SpringBoot的启动器。这些启动器除了打包一堆依赖之外，还添加了一些让人惊喜的小工具，比如web场景启动器内嵌了一个Servlet容器，可以让我们不用再部署到Tomcat。</p>
+<h2 id="SpringBoot的配置"><a href="#SpringBoot的配置" class="headerlink" title="SpringBoot的配置"></a>SpringBoot的配置</h2><p>上面讲了SpringBoot开发的到底有多方便，那么问题来了，我该怎么配置SpringBoot呢？比如我要配置Tomcat的监听端口号，总不能让我修改SpringBoot的源码把8080改成80吧？难道还是老样子用xml配置文件？SpringBoot可是说了零xml配置文件。于是SpringBoot默认使用properties文件配置SpringBoot，并且引入了另一种配置文件yml（迷惑行为）。使用这两种全局配置文件来取代SpringBoot中默认的配置。</p>
+<p>SpringBoot更加专注于约定，而非配置。什么意思呢？我们先来看一个例子：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context-param</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>contextConfigLocation<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 这里使用的是以spring*.xml的通配符方式加载配置的 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>classpath:applicationContext.xml<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">context-param</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是SSM框架中web.xml的一个例子。这里指定了Spring的配置文件的路径以及文件名，web容器通过这个路径和文件名去加载Spring的配置文件，这就是通过配置web.xml来配置组件。而SpringBoot中并没有web.xml文件，那么SpringBoot怎么知道我们的配置文件在哪呢？SpringBoot<strong>约定</strong>了几个目录：</p>
+<ol>
+<li>recourse目录</li>
+<li>recourse目录下的/config目录</li>
+<li>项目的根目录</li>
+<li>项目根目录下的/config目录</li>
+</ol>
+<p>并且将文件名也约定好了，全局配置文件名一定要叫application.properties或者application,yml（当然也可以取其他名字，这个后面会讲）。</p>
+<p>约定好之后，SpringBoot就可以根据这些目录和文件名进行扫描，排列组合也不过八种情况嘛，这些配置文件也是有优先级的，并且重复配置后，优先级低的配置文件不会覆盖优先级高的配置文件。优先级排序规则如下：</p>
+<ol>
+<li>项目根目录＞recourse目录</li>
+<li>/config目录＞不带/config目录</li>
+<li>application.properties&gt;application.yml</li>
+</ol>
+<p>耐人寻味的是，我们平常最常用的就是recourse目录下的application.yml，嗯……最低优先级。</p>
+<p>properties文件相信大家在开发中都使用过，最常用的就是log4j和数据库信息的配置，这里我们就不再赘述了，需要讲解的是yml文件，这个文件看起来和xml有点关系，盲猜下一代配置文件叫zml文件，下面就来讲解yml文件究竟怎么用。</p>
+<h3 id="YML文件"><a href="#YML文件" class="headerlink" title="YML文件"></a>YML文件</h3><p>YML相较于XML更加轻盈，来看一个例子</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> </span><br><span class="line">    <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">host:</span> <span class="string">localhost</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">server</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">port</span>&gt;</span>8080<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">host</span>&gt;</span>localhost<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">server</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight properties"><table><tr><td class="code"><pre><span class="line"><span class="meta">server.port</span>=<span class="string">8080</span></span><br><span class="line"><span class="meta">server.host</span>=<span class="string">localhost</span></span><br></pre></td></tr></table></figure>
+
+<p>三种方式对比后，高下立判。YML使用缩进来表示层级，相较于XML使用标签来表示层级显然更加轻盈，你看这区别像不像Java用大括号界定代码块和Python用缩进界定代码块？哦对，还有lisp圆括号，代码最后一页全都是))))))))))))))))))))))))))))))。相比较properties文件来说分层也更为明显，可读性显然比properties更加优秀，语法上反而和properties一样轻量。</p>
+<p>yml的基本语法规则如下：</p>
+<ol>
+<li>使用缩进表示层级关系</li>
+<li>不允许使用tab缩进，只能使用空格（IDE都有自动转换，放心tab）</li>
+<li>缩进空格不重要，只要同层级的保持空格数量相同即可，也就是说一个空格就可以表示层级</li>
+<li>大小写敏感</li>
+<li>基本语法为：key:(空格)value，空格千万必要忘记！</li>
+</ol>
+<p>yml的value有以下写法：</p>
+<ol>
+<li><p>字面量：包括字符串、数字、布尔值。字符串默认不需要双引号。</p>
+</li>
+<li><p>键值对：可以用来表示Map和对象。例如表示server有两个有两种写法：</p>
+<p> 直接表示：</p>
+ <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> </span><br><span class="line">    <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">    <span class="attr">context:</span> <span class="string">hello</span></span><br></pre></td></tr></table></figure>
+
+<p> 行内表示：</p>
+ <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span> <span class="string">&#123;port:</span> <span class="number">8080</span><span class="string">,context:</span> <span class="string">hello&#125;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>数组：嗯……就数组呗。</p>
+<p> 直接表示：</p>
+ <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">animals:</span> </span><br><span class="line"> <span class="bullet">-</span> <span class="string">pig</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">cat</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">dog</span></span><br></pre></td></tr></table></figure>
+
+<p> 行内表示：</p>
+ <figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">animals:</span> <span class="string">[pig,cat,dog]</span></span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>这三种数据结构可以任意组合，无限套娃。下面来演示怎么将配置文件读取到Java中。</p>
+<h3 id="读取配置文件到Java"><a href="#读取配置文件到Java" class="headerlink" title="读取配置文件到Java"></a>读取配置文件到Java</h3><p>先创建一个类——Cat。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,Cat&gt; friends;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//省略一堆getter和setter方法。</span></span><br><span class="line">    <span class="comment">//可以按alt+insert自行插入</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再创建一个类——Host。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Host</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="comment">//省略getter和setter方法</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再编辑application.yml配置文件</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">cat:</span><br><span class="line">  name: 蓝莓</span><br><span class="line">  age: <span class="number">21</span></span><br><span class="line">  host:</span><br><span class="line">    name: 周某某</span><br><span class="line">  toys:</span><br><span class="line">    - 毛球</span><br><span class="line">    - 逗猫棒</span><br><span class="line">    - 猫薄荷</span><br><span class="line">    - 周某某的头发</span><br><span class="line">  friends:</span><br><span class="line">    mary: <span class="string">"mary的主人"</span></span><br></pre></td></tr></table></figure>
+
+<p>代码写好了，SpringBoot问你，Cat类是哪个配置文件负责配置的？你说就那个cat:开始的呗，SpringBoot又说了，别的包也有一个Cat类（假装有），我不知道注入哪一个Cat，要不你给我打个注解？好让我知道哪个Cat需要我管理，还有这个Cat是哪段配置文件配置的。</p>
+<p>于是拿着SpringBoot给我们的两个注解，@ConfigurationProperties和@Component，放在了Cat的头上，Cat变成了这样：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(prefix = <span class="string">"cat"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,String&gt; friends;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以开始运行了！</p>
+<p>还是用我们的HelloWorld类测试运行（也可以使用测试类进行测试。）</p>
+<p>编辑HelloWorld类：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">final</span> Cat cat;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//为什么这样写可以看我的另一篇博客，白话Spring（一）</span></span><br><span class="line">    <span class="comment">//如果Bean有构造函数，那么可以省略@AutoWired : If a bean has one constructor, you can omit the @Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Cat cat)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cat = cat;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> cat.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
+<h3 id="读取非全局配置文件到Java"><a href="#读取非全局配置文件到Java" class="headerlink" title="读取非全局配置文件到Java"></a>读取非全局配置文件到Java</h3><p>上面讲到怎么把application.yml配置文件读取到Java中，那如果我有很多配置文件呢？难道都要写进application中嘛？那全局配置文件得多臃肿，修改起来也不方便，所有我们需要将部分配置信息分离出一个单独的文件。</p>
+<p>SpringBoot中提供了一个@PropertySource注解，我们先看看这个注解都有什么东西</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Target</span>(&#123;ElementType.TYPE&#125;)</span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Repeatable</span>(PropertySources<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class"><span class="title">public</span> @<span class="title">interface</span> <span class="title">PropertySource</span> </span>&#123;</span><br><span class="line">    <span class="function">String <span class="title">name</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    String[] value();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">ignoreResourceNotFound</span><span class="params">()</span> <span class="keyword">default</span> <span class="keyword">false</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function">String <span class="title">encoding</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line"></span><br><span class="line">    Class&lt;? extends PropertySourceFactory&gt; factory() <span class="keyword">default</span> PropertySourceFactory<span class="class">.<span class="keyword">class</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到这个注解提供了四个值</p>
+<ol>
+<li>name：名称 默认为空</li>
+<li>value：字符串数组，存放需要导入的配置文件路径。</li>
+<li>ignoreResourceNotFound：配置文件没找到，要不要告诉你。默认false，也就是告诉你。</li>
+<li>encoding：编码方式。</li>
+</ol>
+<p>通过上面的四个值我们可以看出这个注解可以加载多个配置文件，现在就来实战。</p>
+<p>将application.yml重命名为cat.yml，修改Cat类：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@PropertySource</span>(value = &#123;<span class="string">"classpath:cat.yml"</span>&#125;)</span><br><span class="line"><span class="meta">@ConfigurationProperties</span>(<span class="string">"cat"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Cat</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String age;</span><br><span class="line">    <span class="keyword">private</span> Host host;</span><br><span class="line">    <span class="keyword">private</span> List&lt;String&gt; toys;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String,String&gt; friends;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Cat&#123;"</span> +</span><br><span class="line">                <span class="string">"name='"</span> + name + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", age='"</span> + age + <span class="string">'\''</span> +</span><br><span class="line">                <span class="string">", host="</span> + host.getName() +</span><br><span class="line">                <span class="string">", toys="</span> + toys +</span><br><span class="line">                <span class="string">", friends="</span> + friends +</span><br><span class="line">                <span class="string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>刷新界面，仍旧可以读取。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200628202503398.png" alt="image-20200628202503398"></p>
+<h3 id="SpringBoot多环境下的配置"><a href="#SpringBoot多环境下的配置" class="headerlink" title="SpringBoot多环境下的配置"></a>SpringBoot多环境下的配置</h3><p>上面我说到SpringBoot和我们约定好了一起把全局配置写到名为application文件中，我也提到了可以使用别的名字。那么什么时候我们需要使用别的名字呢？也就是SpringBoot运行环境不同的时候，我们需要不同的配置文件来配置SpringBoot，比如开发环境通常端口号是8080、生产环境端口号看老大心情。我们总不能每次换一个环境就把全局配置文件进行修改吧？估计改个几次配置文件就面目全非，找不到头尾。SpringBoot也不是那么死板的只读取application文件，多一个字少一个字都不行。</p>
+<p>SpringBoot允许我们添加多个命名为application-{环境名}.yml的application配置文件。</p>
+<p>例如：开发环境可以命名为：application-dev.yml或者application-dev.properties；生产环境可以命名为：application-proc.yml；测试环境可以命名为：application-test.yml</p>
+<p>我们先创建上面三个不同环境下的application配置文件，分别给这三个配置文件写上：</p>
+<p>application-dev.yml</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">6666</span></span><br></pre></td></tr></table></figure>
+
+<p>application-proc.yml</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">7777</span></span><br></pre></td></tr></table></figure>
+
+<p>application-test.yml</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">8888</span></span><br></pre></td></tr></table></figure>
+
+<p>对了，还有不带后缀的配置文件application.yml</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">8080</span></span><br></pre></td></tr></table></figure>
+
+<p>现在直接运行，SpringBoot会使用不带后缀的配置文件来配置SpringBoot。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629115552251.png" alt="image-20200629115552251"></p>
+<p>可以看到端口号是application.yml中所配置的端口号。</p>
+<p>怎么告诉SpringBoot本次运行需要使用哪个配置文件呢？有以下几种方式：</p>
+<ol>
+<li><p>修改默认配置文件：</p>
+<p> 在application.yml文件中添加</p>
+ <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">server:</span><br><span class="line">  port: <span class="number">8080</span></span><br><span class="line">  </span><br><span class="line">spring:</span><br><span class="line">  profiles:</span><br><span class="line">    active: dev</span><br></pre></td></tr></table></figure>
+
+<p> 这里指定了使用后缀名为dev的配置文件，运行后结果：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629120126819.png" alt="image-20200629120126819"></p>
+</li>
+</ol>
+<pre><code>也就是SpringBoot会先去application.yml中看spring.profiles.active是否配置了另一个全局配置文件，如果配置了，就只使用相应后缀的配置文件。</code></pre><ol start="2">
+<li><p>命令行模式：</p>
+<p> 运行时直接加在运行jar包命令的后面 –spring.profiles.active=proc，这种方式牵扯到SpringBoot的打包和运行，不过我们在IDEA中也可以使用增加选项的方式来测试。</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png" alt="image-20200629121313373"></p>
+<p> 在配置环境中添加–spring.profiles.active=proc（意思为生产环境）</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629121913696.png" alt="image-20200629121913696"></p>
+<p> 运行之后结果：</p>
+<p> <img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
+<p> 等等？我们在application.yml中配置了使用dev后缀的配置文件，命令行配置了proc后缀的配置文件，然而现在SpringBoot使用了proc的配置，OK，命令行方式会覆盖application中的配置。</p>
+</li>
+<li><p>虚拟机参数：</p>
+</li>
+</ol>
+<pre><code>![image-20200629121313373](https://gitee.com/vanbyz/images/raw/master/img/image-20200629121313373.png)
+
+在vm选项中添加-Dspring.profiles.active=test</code></pre><p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122816187.png" alt="image-20200629122816187"></p>
+<p>运行之后：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629122015786.png" alt="image-20200629122015786"></p>
+<p>嗯？怎么还是proc的端口？命令行选项没有删除，也就是命令行优先级高于虚拟机配置，把命令行选项删除，再次运行。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629123135251.png" alt="image-20200629123135251"></p>
+<p>这个就是test的端口号了，但是别忘了application.yml中的配置文件从来都没有删除过spring.profiles.active=dev这个配置项。</p>
+<p>所以这三种配置的优先级是：命令行选项 &gt; 虚拟机选项 &gt; application中配置</p>
+<h2 id="SpringBoot注册组件"><a href="#SpringBoot注册组件" class="headerlink" title="SpringBoot注册组件"></a>SpringBoot注册组件</h2><p>SpringBoot虽然可以使用@ImportRecourse注解导入Spring的xml配置文件（也就是创建Bean），但是SpringBoot不推荐这种办法，而是使用配置类来添加组件。</p>
+<p>首先需要告诉SpringBoot这是一个配置类也就是前面讲过的@Configuration注解，SpringBoot会在扫描的时候将这个配置类添加到自己的小本本里。SpringBoot得知这是个配置类之后，你需要告诉它这个配置类是做什么的，Spring提供了一个注解@Bean，这个注解标注在一个方法上，它会将标注方法的返回值注册进容器。</p>
+<p>来看一个例子：</p>
+<p>根包目录下创建一个config包，并创建一个ConfigDemo类。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Configuration</span>  <span class="comment">//标注为配置类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConfigDemo</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Host <span class="title">host</span><span class="params">()</span></span>&#123;  <span class="comment">// 返回值类型是要注册的组件类，方法名是该组件在SpringBoot中的id</span></span><br><span class="line">        System.out.println(<span class="string">"创建Host成功"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Host(<span class="string">"小王"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再魔改一下我们的HelloWorld类（controller包中的，曾经的HelloWorld成为了我们的测试类……）</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 周某某</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//注入组件</span></span><br><span class="line">    <span class="keyword">final</span> Host host;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HelloWorld</span><span class="params">(Host host)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.host = host;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"helloWorld"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> host.getName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行后结果如下：</p>
+<p>控制台：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101604813.png" alt="image-20200629101604813"></p>
+<p>浏览器：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200629101623161.png" alt="image-20200629101623161"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>终于写完了……不算图一共五千字（废话有三千字），不知道有没有人能耐心看完……</p>
+<p>先来总结下知识点：</p>
+<ol>
+<li>SpringBoot是什么？</li>
+<li>HelloWorld怎么写？</li>
+<li>如何通过Spring向导创建SpringBoot项目？</li>
+<li>YML的基本语法以及怎么解析YML到Java？</li>
+<li>全局配置文件的优先级</li>
+<li>解析非全局配置文件到Java</li>
+<li>SpringBoot读取不同环境下的全局配置文件的三种方式及优先级</li>
+<li>通过配置类的方式注册组件到SpringBoot</li>
+</ol>
+<p>如果你看着这八条能够想起来步骤，那么这篇博客已经完成了它的使命，有任何不解请联系我，有问必答。</p>
+]]></content>
+      <categories>
+        <category>SpringBoot</category>
+      </categories>
+      <tags>
+        <tag>SpringBoot</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>SpringBoot学习笔记（二）：自动配置原理</title>
     <url>/SpringBoot%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE%E5%8E%9F%E7%90%86/</url>
     <content><![CDATA[<p><strong>INTRO:</strong>  上一篇博客讲解了SpringBoot的入门知识，了解到SpringBoot的精髓就是自动配置，自动配置的简便让SpringBoot在JavaEE领域大杀四方，学习SpringBoot自动配置的原理让我们知其所以然，博主写这篇博客就是为了让大家了解SpringBoot自动配置的原理。</p>
@@ -1022,6 +866,162 @@
       </categories>
       <tags>
         <tag>SpringBoot</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis学习笔记（一）：Redis基础入门</title>
+    <url>/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong> 在实际开发过程中，我们会经常用到Redis，作为一个高速缓存数据库，我们该从哪里开始学习呢？本文参考Redis文档作为大纲编写，从这篇博客开始开辟Redis这个高速公路。</p>
+<a id="more"></a>
+
+<h2 id="Redis是个啥？"><a href="#Redis是个啥？" class="headerlink" title="Redis是个啥？"></a>Redis是个啥？</h2><p>Redis本质上是一个以key-value存储的数据库。那么key-value数据库可太多了，我们为什么都用redis呢？</p>
+<p>因为Redis是一个内存数据库，并且支持数据持久化，这里解释一下数据持久化。</p>
+<p><strong>数据持久化：</strong>其实这个词学过数据库的都会知道什么意思，但是照顾下初学者（顺便凑凑字数）还是说一说。我们以前的程序都是在内存玩玩，包括我们第一个程序HelloWorld也好，各种排序算法也好，这些东西都是在内存中的。只要我们关闭程序或者计算机断电，所有的东西就都没了（参考老版本的Word文档）。那么我们的数据存在哪里才不会受到这种限制呢？那当然是硬盘啦！像Mysql、Oracle这种就是将数据存进硬盘中，那么问题来了，硬盘它读写速度慢啊！访问量一上去，读写速度直接成为系统瓶颈。于是有大佬想出一个办法，我把常用数据存在内存中不就行了吗？Redis就在这种背景下横空出世。</p>
+<p><strong>Redis的优势</strong>： 刚才讲到Redis的出生背景，可能有些人开始疑惑了，这不是开倒车吗？刚说完数据持久化，你就把数据放到内存了。万一服务器断电，数据不就没了？大佬毕竟是大佬，只要大佬高可用做的好，灾难就追不上大佬。Redis支持主从模式的数据备份，主挂了，我还有从呢！Redis支持数据持久化，可以把数据存进硬盘中，等到重启的时候再拿出来用。（大胆猜测下，向Redis写入数据时，Redis需要做三件事：存数据到主节点内存；同步数据到从节点；同步数据到硬盘。我们在学习过程中再看到底是不是这样。）</p>
+<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><p>入门第一步当然是先安装主角啦！进入<a href="https://redis.io/" target="_blank" rel="noopener">Redis官网</a>寻找Download关键字，看到Download相关的点进去就完事了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709100113889.png" alt="image-20200709100113889"></p>
+<p>点击一下，直接就下载了。默认时linux版本的gz文件，如果你想下载windows版本的可以在这里<a href="https://github.com/tporadowski/redis/releases" target="_blank" rel="noopener">gayhub</a>下载安装。我这里有一台Linux服务器，我就使用linux版本了。希望大家有条件的可以创建虚拟机来操作Linux。</p>
+<p>偷偷告诉大家一个小技巧，win10自带的Powershell可以直接使用ssh/scp来链接服务器或者上传文件。</p>
+<p>我这里使用的ssh工具是Termius，好用倒是没多好用，就是界面美观。scp就用Powershell了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709102039501.png" alt="image-20200709102039501"></p>
+<p>不得不说微软现在越来越开放了，像VS Code、Powershell等都支持跨平台了，我的青春结束了。</p>
+<p>来到服务器，在/root目录运行解压redis安装包</p>
+<blockquote>
+<p>tar -zxvf  redis-6.0.5.tar.gz</p>
+</blockquote>
+<p>进入目录并且编译</p>
+<blockquote>
+<p>cd redis-6.0.5/ &amp;&amp; make</p>
+</blockquote>
+<p>如果编译期间报错，那么就是你的gcc版本出现问题，两种解决方案：升级gcc；使用更低的Redis版本；</p>
+<p>*注意！生产环境中不可擅自升级gcc，凡事先问运维可不可以升级！</p>
+<p>我这里选择升级gcc，按顺序运行这些命令，然后</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">yum install -y cpp</span><br><span class="line">yum install -y binutils</span><br><span class="line">yum install -y glibc</span><br><span class="line">yum install -y glibc-kernheaders</span><br><span class="line">yum install -y glibc-common</span><br><span class="line">yum install -y glibc-devel</span><br><span class="line">yum install -y gcc</span><br><span class="line">yum install -y make</span><br><span class="line"></span><br><span class="line">yum -y install centos-release-scl</span><br><span class="line">yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils</span><br><span class="line">scl enable devtoolset-9 bash</span><br><span class="line"></span><br><span class="line">echo "source /opt/rh/devtoolset-9/enable" &gt;&gt;/etc/profile</span><br></pre></td></tr></table></figure>
+
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-server</p>
+</blockquote>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709111549533.png" alt="image-20200709111549533"></p>
+<p>出现这个就说明Redis的server端启动起来了，可以通过redis内置的一个客户端与服务端进行交互。</p>
+<p>因为这个被占用了，另开一个ssh链接。</p>
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-cli</p>
+</blockquote>
+<p>这个时候进入了redis命令行模式，我们输入set的时候，redis会自动给我们提示</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709112032802.png" alt="image-20200709112032802"></p>
+<p>小声bb：Mysql赶紧跟人家学学！</p>
+<p>然后，在命令行输入</p>
+<blockquote>
+<p>set hello world</p>
+</blockquote>
+<p>输出OK，表示我们已经完成了key-value的添加</p>
+<p>输入</p>
+<blockquote>
+<p>get hello</p>
+</blockquote>
+<p>输出 “world”</p>
+<p>至此一个简单的测试用例就完成了。如果你觉得安装redis还需要使用虚拟机有点麻烦，并且你不想redis占用资源，那么你可以通过<a href="https://try.redis.io/" target="_blank" rel="noopener">在线Redis</a>，来学习Redis。</p>
+<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><p>Redis的配置文件是位于安装目录下的<strong>redis.conf</strong>文件，可以通过Config来查看或者配置Redis。</p>
+<p>格式为：</p>
+<blockquote>
+<p>CONFIG GET CONFIG_NAME</p>
+</blockquote>
+<p>例如我们可以输入 CONFIG GET * 来查看所有的配置</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709125521604.png" alt="image-20200709125521604"></p>
+<p>从这里们可以看出配置文件的结构是两行为一个配置，奇数行是配置名，这个奇数行下面的偶数行是该配置项的值。</p>
+<p>也就是</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;配置名xxx&quot;</span><br><span class="line">2) &quot;xxx的值&quot;</span><br></pre></td></tr></table></figure>
+
+<p>我们会在后面的知识讲解这些配置项的含义。</p>
+<p>先使用CONFIG GET PORT查看redis日志的等级</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;notice&quot;</span><br></pre></td></tr></table></figure>
+
+<p>使用CONFIG SET CONFIG_NAME CONFIG_VALUE 的格式可以设置配置项的值，例如</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG SET loglevel warning</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<p>再查看的时候结果就变了。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;warning&quot;</span><br></pre></td></tr></table></figure>
+
+<p>题外话：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Warning: since Redis is pretty fast an outside user can try up to 150k passwords per second against a good box. This means that you should use a very strong password otherwise it will be very easy to break.</span><br><span class="line">因为redis速度太快，所以暴力破解密码也很快，如果你的redis地址暴露，数据安全岌岌可危。</span><br></pre></td></tr></table></figure>
+
+<h2 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h2><p>Redis支持五种基本的数据结构：</p>
+<p><strong>String：</strong>这是Redis中最基本的元素，它不仅仅可以存储我们日常中的字符串，它还能存储一些音乐、图片，甚至序列化之后的Java对象(你想到了什么？)，一个String最多可以存储<strong>512MB</strong>的内容。</p>
+<blockquote>
+<p>SET url “blooog.top”</p>
+<p>OK</p>
+<p>GET url</p>
+<p>“blooog.top”</p>
+</blockquote>
+<p><strong>Hash：</strong> Redis中的Hash是一系列键值对的集合，类似于Java中的Map，Hash本质上是String类型的field和String类型的value的映射表，一个Hash映射表可以存储2<sup>32</sup> -1个键值对。</p>
+<p>我们在Redis命令行敲上HMSET 出现一串提示：</p>
+<blockquote>
+<p>HMSET key field value [field value ……]</p>
+</blockquote>
+<p>根据这个结构我们输入一个Hash</p>
+<blockquote>
+<p>HMSET user:admin name zhouxx url blooog.top post redis</p>
+</blockquote>
+<p>然后使用命令</p>
+<blockquote>
+<p>HGETALL user:admin</p>
+</blockquote>
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;name&quot;</span><br><span class="line">2) &quot;zhouxx&quot;</span><br><span class="line">3) &quot;url&quot;</span><br><span class="line">4) &quot;blooog.top&quot;</span><br><span class="line">5) &quot;post&quot;</span><br><span class="line">6) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
+
+<p><strong>List：</strong> 类似于数组，里面可以存储 2<sup>32</sup> -1个String类型的元素，使用LPUSH命令可以进行存储，语法也比较简单，直接把要存进去的元素写在后面就行了。</p>
+<p>例如：</p>
+<blockquote>
+<p>LPUSH exlist zhouxx blooog.top redis</p>
+</blockquote>
+<p>取出元素可以使用LRANGE命令</p>
+<blockquote>
+<p>LRANGE exlist 0 5</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意，List中的顺序和们输入的顺序是相反的，为什么会这样呢？因为我们使用的是LPUSH，也就是按照输入的顺序从List左边插入。</p>
+<p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
+<p>使用SADD KEY ELE添加元素，例如：</p>
+<blockquote>
+<p>SADD exset zhouxx</p>
+<p>SADD exset blooog.top</p>
+<p>SADD exset redis</p>
+</blockquote>
+<p>使用SMAMERS zhouxx命令查看集合中的东西</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;zhouxx&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
+
+<p>同样的，Set中也可以存放2<sup>32</sup> -1个String类型的元素。</p>
+<p>注意：Set中仅能存放不同的元素，第二次插入的相同元素会无效。</p>
+<p><strong>Zset：</strong> 有序集合，Zset和Set相似，都不允许插入相同的元素，不同的是Zset中每个元素都有一个Score用来代表权值，Redis通过Score来进行排序。默认为正序，并且Score可以重复。</p>
+<p>使用 ZADD KEY SCORE ELE添加元素，例如：</p>
+<blockquote>
+<p>ZADD exzset 12.12 zhouxx</p>
+<p>ZADD exzset 11.11 blooog.top</p>
+<p>ZADD exzset 6.18 redis</p>
+</blockquote>
+<p>使用ZRANGEBYSCORE KEY START END命令读取SCORE区间内的元素</p>
+<blockquote>
+<p>ZRANGEBYSCORE  exzset 6.18 12.12</p>
+</blockquote>
+<p>结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出这个范围要求是双向闭区间。</p>
+<h2 id="Redis和它的二百命令"><a href="#Redis和它的二百命令" class="headerlink" title="Redis和它的二百命令"></a>Redis和它的二百命令</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
+<p>命令还是很多的（这个是真的有！），据官网上说，Redis有二百多条命令。</p>
+<p>Redis官方把根据命令负责的模块，将命令分为多个命令集，有了分类再掌握命令就方便了。官网也提供了快速查询的通道。</p>
+<p>英文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文版的翻译不是很全，但是一些经常用的命令都做了翻译。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
       </tags>
   </entry>
   <entry>
@@ -1359,6 +1359,165 @@
       </tags>
   </entry>
   <entry>
+    <title>分布式即时聊天解决方案</title>
+    <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
+<ol>
+<li>websocket连接池和用户多地登录解决方案。</li>
+<li>EOFException出现原因及解决方案。</li>
+<li>分布式服务器消息同步解决方案。</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="websocket连接池"><a href="#websocket连接池" class="headerlink" title="websocket连接池"></a>websocket连接池</h2><p>首先客朵使用了ConcurrentHashMap作为连接池，userId作为Key，session作为value，但是问题随之而来，当用户多地登录的时候，后登录的用户会挤掉先登录的用户。导致先登录的用户无法正常收发消息。</p>
+<p>这里有两种方案：</p>
+<ol>
+<li>允许元素重复的、线程安全的<strong>CopyOnWriteArrayList</strong>作为连接池，但是在发送消息是需要从头进行遍历，导致性能下降，在并发量超过一定值的时候就会导致发送缓慢，每次发送的时间复杂度都是O(n)。</li>
+<li>仍旧使用<strong>ConcurrentHashMap</strong>作为连接池，userId作为key，但是value需要使用<strong>List</strong>，该List中存放userId相同的Session。这种方案相较于方案一来说速度更快，但是对内存的消耗略大于方案一，并且实现起来也稍微复杂一点。</li>
+</ol>
+<h2 id="EOFException出现原因及解决方案。"><a href="#EOFException出现原因及解决方案。" class="headerlink" title="EOFException出现原因及解决方案。"></a>EOFException出现原因及解决方案。</h2><p>其次在开发过程中每次链接三分钟就会出现EOFException，随后断开连接，最后定位到是nginx负载均衡对长时间无数据交互做了限制，阿里云默认为1分钟断开连接。为了保证用户长时间五交互不断开，所以加入了心跳检测机制，Clidoo项目是由前端进行心跳检测的，很多复杂的逻辑都由前端执行。</p>
+<p>前端执行：前端使用定时器发送心跳包，如果超过n个心跳包没有收到回复，就选择重连。具体的实现逻辑可以去询问前端 @杨弋。</p>
+<p>后端需要对心跳检测进行及时的回复确认。这里前端发送的东西和回复的东西没有特殊要求，前后端协调好就可以。</p>
+<h2 id="分布式服务器消息同步解决方案"><a href="#分布式服务器消息同步解决方案" class="headerlink" title="分布式服务器消息同步解决方案"></a>分布式服务器消息同步解决方案</h2><p>由于web socket 使用Session进行传递消息，Session存储在内存中，那么就会出现一种情况，用户A给用户B发送消息，该消息经过负载均衡分配到了服务器B来处理该请求，假如用户B连接web socket的session在服务器B上，那么就不会有异常发生，可以正常收发消息。但是，如果用户B连接的服务器是A服务器，那么对于服务器B来说，用户B是不在线的。这条消息就不能及时发送给用户B。</p>
+<p>为了解决分布式服务器消息同步的问题，这里提供两种方案：</p>
+<ol>
+<li>Session共享</li>
+<li>Session同步</li>
+</ol>
+<p>方案1中的Session共享就是将Session的存储地由内存改为多台机器可以公用的缓存池。方案2中的Session同步就是有新连接的时候，将Session进行copy。</p>
+<p>很明显，方案1是优于方案2的。</p>
+<p>(未完待续……)</p>
+]]></content>
+      <categories>
+        <category>work log</category>
+      </categories>
+      <tags>
+        <tag>SpringBoot</tag>
+        <tag>message</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>让人头疼的多线程：CRUD用得到多线程？</title>
+    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。</p>
+<a id="more"></a>
+
+<h2 id="嘛是多线程？"><a href="#嘛是多线程？" class="headerlink" title="嘛是多线程？"></a>嘛是多线程？</h2><p>线程：程序执行的最小单位。线程线程，一条线上的程序，我们把程序的执行当作一条线，从头到尾，中间可能有打结（循环结构），分叉（判断结构），但是并不影响我们从线头撸到线尾。</p>
+<p>上面是单线程的情况，多线程就是有很多根线，CPU走走这条线，跑跑那条线，不专注在一棵树上吊死。</p>
+<p>举一个生活中的例子，某妹子是一个专业养备胎二十年的老女神。她为了维护自己的女神形象无法让这些备胎见面，所以她只能敷衍过一个备胎之后再敷衍另一个备胎。某一天早晨，备胎A发消息说给女神买了早餐，一分钟后备胎B给女神发了早安，女神是应该先吃完A的早餐之后再回复备胎B，还是先回复备胎B的早安然后继续等A的早餐呢？</p>
+<p>答案很明显是先把B的早安回了，毕竟闲着也是闲着不是？这个例子中女神就是CPU，两个备胎就是线程，是否知道线程的作用了呢？如果这个例子是单线程的，就会出现这种情况：备胎A给女神买了早餐，女神开始等待备胎A的早餐，一分钟后备胎B给女神发了早安，女神并没有看到，因为女神呆呆望着门口等待A的早餐，更别说回复了。</p>
+<p>多线程的意义就在于此，把CPU等待IO的时间充分利用起来，CPU等待IO的时候，就给它安排计算，无情压榨。</p>
+<p>既然多线程这么香，为什么不到处都用多线程呢，两个表达式就开一个线程岂不是速度飞起？</p>
+<p>多线程还是有缺点的：</p>
+<ol>
+<li>线程的切换需要消耗系统资源。</li>
+<li>线程的创建需要消耗大量系统资源。</li>
+<li>线程之间的安全问题比较复杂。</li>
+<li>多线程有可能发生死锁。</li>
+<li>线程会占用额外的内存空间。</li>
+</ol>
+<p>这些缺点有些是可以避免的，能否避免、怎样避免就是我们为什么要学习多线程技术，也是多线程技术复杂的原因，因为它必须解决这么多的多线程缺陷。</p>
+<h2 id="CRUD用得到多线程？"><a href="#CRUD用得到多线程？" class="headerlink" title="CRUD用得到多线程？"></a>CRUD用得到多线程？</h2><p>有同学要问了，我开发的项目都是用的Spring，无非就是增删改查，哪里用得到多线程嘛。</p>
+<p>我们来看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserInfo <span class="title">getUserInfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户id查询用户信息</span></span><br><span class="line">        <span class="keyword">return</span> userInfo;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderInfo <span class="title">getOrderinfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户Id查询该用户的订单信息</span></span><br><span class="line">        <span class="keyword">return</span> orderInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设我们有一个界面需要调用这两个Service层方法，也就是某一Controller调用了这两个方法，并且将查询到的用户信息和订单信息打包成一个JSON字符串，而服务器架构是这样的：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717123728495.png" alt="image-20200717123728495"></p>
+<p>静态服务器做负载均衡，接收用户请求，动态服务器（Tomcat）集群用处理请求进行运算，数据库服务器存储数据。</p>
+<p>如果不使用多线程，那么两个方法顺序执行，是这样的步骤：</p>
+<ol>
+<li>静态服务器接收到用户请求</li>
+<li>静态服务器转发请求给动态服务器</li>
+<li>动态服务器处理请求，先调用getUserInfo()方法向数据库服务器查询数据</li>
+<li>数据返回到动态服务器，动态服务器调用getOrderInfo()方法向数据库服务器查询数据</li>
+<li>数据解析成JSON字符串数据给静态服务器</li>
+</ol>
+<p>观察第4-5步，动态服务器调用getUserInfo方法之后需要向数据库服务请求数据，此时CPU进入闲置状态，因为CPU在等待数据库服务器返回数据，假设动态服务器到数据库服务器需要0.5s，那么这0.5s中大概有0.45s都是在浪费CPU。</p>
+<p>使用多线程就不一样了，动态服务器向数据库服务器查询UserInfo数据的要求之后，该线程继续等待数据的返回，而是另一线程则紧接着发送查询OrderInfo数据的请求，并且自己等待数据的返回。（没错，这个叫做异步）</p>
+<p>悄咪咪地说一句，Spring针对这种异步情况提供了一个注解——@Async，有时间讲一讲。</p>
+<h2 id="创建多线程"><a href="#创建多线程" class="headerlink" title="创建多线程"></a>创建多线程</h2><p>学习多线程的第一步当然是创建几个多线程玩玩啦！</p>
+<p>创建多线程有两种方式：</p>
+<p>继承Thread并且重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread0().start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实现Runnable接口重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Thread0()).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最终还是要把Runnable类传递到Thread中，Runnable也就图一乐，真要用线程还是Thread。既然如此为什么要使用Runnable呢？因为Java不支持多继承，一个类只能有一个爹，而且实现Runnable接口更能体现面向接口编程的开发理念。</p>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>通过Thread的源码我们可以得知Java线程一共有六种状态：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> State &#123;</span><br><span class="line">    NEW,</span><br><span class="line">    RUNNABLE,</span><br><span class="line">    BLOCKED,</span><br><span class="line">    WAITING,</span><br><span class="line">    TIMED_WAITING,</span><br><span class="line">    TERMINATED;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">State</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>NEW：新建状态，线程对象刚创建，还没有调用start()方法跑起来。这里提一句，run方法和start方法一定要分清楚，run方法是你告诉计算机打算开启一个新线程运行run方法中的代码，start方法才是开始新线程。</p>
+<p>RUNNABLE：就绪状态，表示线程随时都可以运行，这个状态可能发生在刚调用线程的start方法、sleep方法时间到了，从wait状态被唤醒、CPU正常切换到另一个线程。</p>
+<p>BLOCKED：阻塞状态，表示线程暂时不能运行，处于等待锁的状态，例如运行到synchronized关键字。</p>
+<p>WAITING：等待状态，表示线程当前正在等待另一线程唤醒，通常使用wait()，join()等进入。</p>
+<p>TIMED_WAITING：带时间的等待状态，例如sleep方法，时间到了就自然进入RUNNABLE状态。</p>
+<p>TERMINATED：销毁状态，线程逻辑也就是run()方法执行完毕，不需要再调度该线程。</p>
+<p>用一个图可以表示这六种状态的相互转换：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717141332216.png" alt="image-20200717141332216"></p>
+<p>可以把这几种状态比作皇帝后宫妃子的状态。</p>
+<p>NEW：选进宫中，进行培训（哪有刚来就被皇上宠幸的）。</p>
+<p>RUNNABLE：随时可以被翻牌子，等待皇上宠幸。</p>
+<p>BLOCKED：被得宠的妃子欺压，打进冷宫，等到得宠的妃子释怀（释放锁）才能继续被皇上宠幸。</p>
+<p>WAITING：不孕不育，除非别的妃子或者来了神医，否则皇上再也不宠幸你了。</p>
+<p>TIMED_WAITING：来大姨妈，时间到了恢复可以被皇上宠幸的状态。</p>
+<p>TERMINATED：完成妃子的终极目标，怀孕了……不用伺候皇上了。</p>
+<p>有一说一，感觉全网没有比这个更加形象的比喻了……但是BLOCKED的比喻不是很符合，凑合看吧。</p>
+<h2 id="线程相关的方法"><a href="#线程相关的方法" class="headerlink" title="线程相关的方法"></a>线程相关的方法</h2><p>讲过了线程状态的切换，下面就需要讲一讲线程之间切换状态所使用的方法了。线程相关的方法按照调用方式可以分为三种，对象方法，该方法属于对象，由对象调用；静态方法，该方法属于Thread类，调用该方法会作用于调用者；Object继承的方法，该方法继承自Object类。</p>
+<h3 id="对象方法"><a href="#对象方法" class="headerlink" title="对象方法"></a>对象方法</h3><p><strong>start()：</strong>这个方法使线程从NEW状态变为RUNNABLE状态</p>
+<p><strong>getState()：</strong>获取线程当前的状态</p>
+<p><strong>interrupt()：</strong>中断当前线程</p>
+<p><strong>join()：</strong>等待指定线程完事才能继续运行，如果使用有参的join()方法的话，就是等指定线程完事或者经过指定毫秒。被插队的线程进入WAITING状态。</p>
+<p>上面是Thread对象的常用方法（其他getter和setter方法就不列出来了）。</p>
+<p>简单说一下interrupt()方法吧。</p>
+<p><strong>中断：</strong>用一把剪刀把线程剪短，不让线程继续进行下去。然而Java中的中断机制并没有剪刀剪线头那么利落。Java中调用interrupt()方法是给线程一个中断标记，具体怎样处理还是要看线程自己，线程觉得自己工作很重要，就不理会中断标志位，而是继续执行下面的语句。</p>
+<p>还有两个名字很像的方法难以区分，interrupted和isInterrupted。interrupted()是个静态方法，返回当前线程的中断状态（不管你是调用哪个线程对象的interrupted()方法，这条语句哪个线程执行就是哪个线程的中断状态），并且清除线程的中断标记。isInterrupted()不是静态方法，返回线程对象的中断状态，不会清除中断标记。</p>
+<p>说到中断，曾经有一个stop()方法可以强制结束线程的生命，后来被弃用了。调用线程对象的stop方法会立刻释放该线程对象的锁和线程资源。例如一个程序在转账过程中被中断，转出成功但是还没转入目标账户，用户钱凭空消失！你永远也不知道调用一个线程的stop()方法时这个线程在干什么。所以现在中断方式由命令中断，改为请求中断，由线程自己决定要不要中断。</p>
+<h3 id="静态方法"><a href="#静态方法" class="headerlink" title="静态方法"></a>静态方法</h3><p><strong>sleep()：</strong>调用该方法的线程会进入TIMED_WAITING状态，等待事件结束之后，自动恢复RUNNABLE状态。</p>
+<p><strong>yield()：</strong>放弃当前的CPU使用权，也就是皇上翻了某妃子的牌子，妃子说皇上您再重新选一次，皇上有可能再次翻该妃子的牌子，也有可能翻其他妃子的牌子。</p>
+<p><strong>interrupted()：</strong> 这个讲过了，请看上面中断部分。</p>
+<p><strong>currentThread()：</strong>获取当前线程的线程对象。例如我们实现Runnable接口的时候，此时当前线程对象是Runnable类型，无法使用上一章节的非静态方法，此时可以调用currentThread()方法获取Thread对象，然后通过对象来调用非静态方法。</p>
+<p><strong>activeCount()：</strong>返回当前线程组存活的线程。</p>
+<h3 id="Object的遗产方法"><a href="#Object的遗产方法" class="headerlink" title="Object的遗产方法"></a>Object的遗产方法</h3><p><strong>wait()：</strong>这个方法是从Object继承过来的，它会让线程释放锁，并且进入WAITING状态。看起来和sleep很相似，后面会详细讲解wait和sleep的区别。</p>
+<p><strong>notify()/notifyAll()：</strong> 这两个方法也是从Object继承过来的，notify方法会唤醒处于wait的线程。</p>
+<p>注意：wait()和notify()都必须放在同步代码块或者同步方法中。</p>
+<h3 id="wait-方法和sleep-方法的区别"><a href="#wait-方法和sleep-方法的区别" class="headerlink" title="wait()方法和sleep()方法的区别"></a>wait()方法和sleep()方法的区别</h3><p>上面我们了解到wait方法和sleep方法都会让线程进入WAITING/TIMED_WAITING状态，两者有以下区别：</p>
+<ol>
+<li>血统不同：wait方法继承自Object，而sleep是Thread类的一个静态方法。</li>
+<li>对待锁的方式不同：sleep不会释放锁，只是把CPU让出来。wait不仅会让出CPU，还会释放锁。</li>
+<li>运行环境不同：sleep在哪都可以运行，wait只能运行于同步代码块/同步方法中</li>
+</ol>
+<h2 id="线程的属性"><a href="#线程的属性" class="headerlink" title="线程的属性"></a>线程的属性</h2><p><strong>线程优先级：</strong>在Java中，每个线程都有自己的优先级，并且子类可以继承父类的优先级。可以通过getter和setter方法获取或者设置线程的优先级。Java将线程的优先级分为10个等级，并且提供了三个常量：MIN_PRIORITY=1;MAX_PRIORITY=10;NORM_PRIORITY=5。</p>
+<p>线程调度器准备执行新线程时，会优先选择较高优先级的线程，但是线程优先级依赖于系统。不同的平台可能对线程的优先级处理不同，例如Windows中线程的优先级分为七个等级，而Oracle为Linux提供的JVM没有线程优先级这个概念，所有线程优先级是平等的。</p>
+<p>所以不要过度依赖线程优先级，程序的正确性如果依赖于线程优先级，那么不同的平台可能会出现不同结果。</p>
+<p>另外，低优先级的线程可能一直无法执行，导致低优先级的线程饿死。</p>
+<p><strong>守护线程：</strong> Java中设置了一个标志位——Daemon，这个标志位表示该线程是否是一个守护线程。先来介绍一下守护线程，守护线程唯一的作用就是给其他线程提供服务，例如提供计时功能。</p>
+<p>值得讨论的是守护线程的生命周期，守护线程不是妃子，守护线程是妃子的丫鬟，当所有的妃子都嗝屁了之后，守护线程也会随之嗝屁，因为守护线程没有提供服务的对象了，也就没有存在的必要了。</p>
+<p>这里提醒大家：千万不要让守护线程访问数据库，就像之前说的stop方法一样，你永远不知道守护线程什么时候嗝屁了。</p>
+<p><strong>线程组：</strong> 为了方便管理线程，Java推出了线程组这一概念。Thread的构造方法提供了线程组的参数，传入所在线程组的对象。假设A线程创建了B线程，并且B线程的构造方法没有设置线程组对象，那么默认B线程和A线程同属于一个线程组。</p>
+<p>然而，大家在程序中尽量避免使用线程组。因为Java引入了更好的线程管理集合。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<ol>
+<li>什么是多线程</li>
+<li>多线程关Spring CRUD什么事</li>
+<li>线程的状态和转化</li>
+<li>线程相关的方法</li>
+<li>wait和sleep方法的区别</li>
+<li>线程的属性</li>
+<li>线程优先级好不好使？</li>
+<li>守护线程是个啥？</li>
+</ol>
+<p>多线程的知识还是有点多的，尽管都是很基础的东西，但是以自己的水平写出来还是比较吃力的。这篇博客写了两天，还是有很多知识没有提及，比如多线程中的异常处理机制。有时间的话再另写一篇博客补充上去吧。</p>
+]]></content>
+      <categories>
+        <category>多线程</category>
+      </categories>
+      <tags>
+        <tag>多线程</tag>
+        <tag>并发</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>强撸Java基础：一键掌握IO框架和装饰者模式</title>
     <url>/%E5%BC%BA%E6%92%B8Java%E5%9F%BA%E7%A1%80%EF%BC%9A%E4%B8%80%E9%94%AE%E6%8E%8C%E6%8F%A1IO%E6%A1%86%E6%9E%B6%E7%9A%84%E6%8E%92%E5%88%97%E7%BB%84%E5%90%88%E7%B1%BB/</url>
     <content><![CDATA[<p><strong>INTRO：</strong> Java中的IO类有多复杂相信学习过的人都接触过，觉得IO框架复杂那是没有掌握它的设计思想，死记硬背不是好方法，只有掌握思想才能灵活运用。本文就从设计思想入手，从零开始讲解Java IO框架。</p>
@@ -1443,6 +1602,39 @@
       <tags>
         <tag>IO</tag>
         <tag>Java</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>记一次面试：上海元恒信息技术有限公司</title>
+    <url>/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E4%BF%A1%E6%81%AF%E6%8A%80%E6%9C%AF%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/</url>
+    <content><![CDATA[<p><strong>INTRO:</strong> 昨天上午去参加了一场面试，晚上通知我入职，能够感受到公司的诚意，已经决定入职。</p>
+<a id="more"></a>
+
+<p>来到上海后面试的第一家公司，去的路上还下了点小雨。</p>
+<p>到公司之后，先让做笔试，笔试的试题这里因为公司机密问题不能透漏，只能告诉大家试题的比较接近实践，覆盖面也比较广。笔试给了大概有四十分钟的时间，我只写了一半的题目（一共四道题，从里面任选三个解答，我写了两道）可能是好久不写字，字体有点丑，好在面试官没有在乎这个……</p>
+<p>总结一下为什么时间不够的问题：</p>
+<ol>
+<li>前面填写个人信息花费了时间</li>
+<li>前面两道题写的过于详细，挤压了后面的答题时间</li>
+</ol>
+<p>写完题之后，被带到一个座位上。</p>
+<p>过来一个面试官，是一个和善的老大哥。面试官问了一些关于技术上的问题，主要问的都是Java基础的知识，比如面向对象、Java集合框架、Java多线程相关的知识。</p>
+<p>前面问的时候还是很紧张的，后面进入状态之后感觉自己回答的还可以。</p>
+<p>后面问到线程相关的知识，面试官很诧异问我回答的还可以，怎么最后一题没有写（最后一题是线程相关的问题），我说时间不太够了。面试官又重新给我十分钟的时间让我写这道题，当时有点慌张，虽然这个题有思路，但是毕竟自己没有用代码实现过，可能会出现代码格式乱七八糟的问题。博主在之前就因为这个被挂过面试……</p>
+<p>面试官很善解人意的跟我说，你在这写，我不看着你，你别紧张。我的妈呀，从来没见过这么和善的面试官，相信大家都有过被老师盯着，然后一个字写不出来的情况，面试官这个举动让我直接对这家公司的好感拉满。</p>
+<p>大概十分钟过去，面试官在旁边跟我说，不需要局限语法，思路写出来就行了，当时已经写的差不多了，还差几行代码。可能因为自己字比较大，留的空隙不是很够，还有重要代码没有写出来。</p>
+<p>后面又来了一个老哥面试我，能够认出来他就是公司创始人孙总。孙总来了之后，之前面试我的面试官又问了一些关于数据库的问题，说实话，两个面试官同时问我还是有点紧张的……甚至很多基础上的东西都没答上来，背地里狠狠抽自己两巴掌，同时感觉自己的心态需要进行一些调整。</p>
+<p>除了数据库之外，又问了一些关于我之前实习的问题，让我讲了一些实际上的例子。后来孙总问了我一个问题为什么要用HDFS，当时我说了一下自己的理解，孙总都说不对。今天早上我睡得迷迷糊糊的时候，我才突然想起来，答案就在HDFS名字里面呀！Hadoop<strong>分布式</strong>文件系统嘛！HDFS可以做高可用，文件系统不行。HDFS遵循计算向数据移动，文件系统不行。HDFS可以做并行运算，关系型数据库不行。</p>
+<p>后面又问了一些关于我自己认知的问题，比如我有什么优点等等。</p>
+<p>面试过后，我提了两个问题，一个就是问公司的性质，是不是一个外包公司，孙总跟我解释，他们是做一个技术承包的公司，有的公司没有技术部门，他们作为一个技术承包的存在，并且与合作公司长期合作进行产品迭代。另一个问题就是我恳请两个面试官对我进行点评，其中一个面试官说我有点紧张，被无情看穿了…话说面试当然有点紧张了，还是面对技术大佬的情况下，生怕自己哪个技术理解错了就被大佬心底无情嘲笑。后面孙总点评的比较多，点出了我的一个缺点，比如对于自己的职业评估会出现偏差，这点我是承认的，之前因为没有对自己的职业进行正确评估，自己浪费了很多精力和时间去学习自己不感兴趣的方向。不过也不能说是浪费时间，毕竟走过不适合的道路才知道什么是自己想要的。</p>
+<p>这次面试的体验非常好，两个面试官和善不说，主要是愿意引导你一步一步阐述自己的知识架构，并且尽量保持面试者轻松心态、发挥面试者的真实水平。</p>
+<p>今天要做的事情比较多，办理入职需要的材料，注销之前不用的招商银行卡，办理入职需要的工商银行卡。把握最后一天的自由人身份，以后时间可就不多了。碰巧上海该死不死的下雨了，但是总不能放朋友鸽子吧，去城隍庙的计划大概率泡汤了，希望晚上不要下了，还想再品尝一下外滩的夜景。</p>
+]]></content>
+      <categories>
+        <category>面试</category>
+      </categories>
+      <tags>
+        <tag>面试</tag>
       </tags>
   </entry>
   <entry>
@@ -1736,198 +1928,6 @@
         <tag>多线程</tag>
         <tag>线程安全</tag>
         <tag>synchronized</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>分布式即时聊天解决方案</title>
-    <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
-<ol>
-<li>websocket连接池和用户多地登录解决方案。</li>
-<li>EOFException出现原因及解决方案。</li>
-<li>分布式服务器消息同步解决方案。</li>
-</ol>
-<a id="more"></a>
-
-<h2 id="websocket连接池"><a href="#websocket连接池" class="headerlink" title="websocket连接池"></a>websocket连接池</h2><p>首先客朵使用了ConcurrentHashMap作为连接池，userId作为Key，session作为value，但是问题随之而来，当用户多地登录的时候，后登录的用户会挤掉先登录的用户。导致先登录的用户无法正常收发消息。</p>
-<p>这里有两种方案：</p>
-<ol>
-<li>允许元素重复的、线程安全的<strong>CopyOnWriteArrayList</strong>作为连接池，但是在发送消息是需要从头进行遍历，导致性能下降，在并发量超过一定值的时候就会导致发送缓慢，每次发送的时间复杂度都是O(n)。</li>
-<li>仍旧使用<strong>ConcurrentHashMap</strong>作为连接池，userId作为key，但是value需要使用<strong>List</strong>，该List中存放userId相同的Session。这种方案相较于方案一来说速度更快，但是对内存的消耗略大于方案一，并且实现起来也稍微复杂一点。</li>
-</ol>
-<h2 id="EOFException出现原因及解决方案。"><a href="#EOFException出现原因及解决方案。" class="headerlink" title="EOFException出现原因及解决方案。"></a>EOFException出现原因及解决方案。</h2><p>其次在开发过程中每次链接三分钟就会出现EOFException，随后断开连接，最后定位到是nginx负载均衡对长时间无数据交互做了限制，阿里云默认为1分钟断开连接。为了保证用户长时间五交互不断开，所以加入了心跳检测机制，Clidoo项目是由前端进行心跳检测的，很多复杂的逻辑都由前端执行。</p>
-<p>前端执行：前端使用定时器发送心跳包，如果超过n个心跳包没有收到回复，就选择重连。具体的实现逻辑可以去询问前端 @杨弋。</p>
-<p>后端需要对心跳检测进行及时的回复确认。这里前端发送的东西和回复的东西没有特殊要求，前后端协调好就可以。</p>
-<h2 id="分布式服务器消息同步解决方案"><a href="#分布式服务器消息同步解决方案" class="headerlink" title="分布式服务器消息同步解决方案"></a>分布式服务器消息同步解决方案</h2><p>由于web socket 使用Session进行传递消息，Session存储在内存中，那么就会出现一种情况，用户A给用户B发送消息，该消息经过负载均衡分配到了服务器B来处理该请求，假如用户B连接web socket的session在服务器B上，那么就不会有异常发生，可以正常收发消息。但是，如果用户B连接的服务器是A服务器，那么对于服务器B来说，用户B是不在线的。这条消息就不能及时发送给用户B。</p>
-<p>为了解决分布式服务器消息同步的问题，这里提供两种方案：</p>
-<ol>
-<li>Session共享</li>
-<li>Session同步</li>
-</ol>
-<p>方案1中的Session共享就是将Session的存储地由内存改为多台机器可以公用的缓存池。方案2中的Session同步就是有新连接的时候，将Session进行copy。</p>
-<p>很明显，方案1是优于方案2的。</p>
-<p>(未完待续……)</p>
-]]></content>
-      <categories>
-        <category>work log</category>
-      </categories>
-      <tags>
-        <tag>SpringBoot</tag>
-        <tag>message</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>记一次面试：上海元恒信息技术有限公司</title>
-    <url>/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E4%BF%A1%E6%81%AF%E6%8A%80%E6%9C%AF%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/</url>
-    <content><![CDATA[<p><strong>INTRO:</strong> 昨天上午去参加了一场面试，晚上通知我入职，能够感受到公司的诚意，已经决定入职。</p>
-<a id="more"></a>
-
-<p>来到上海后面试的第一家公司，去的路上还下了点小雨。</p>
-<p>到公司之后，先让做笔试，笔试的试题这里因为公司机密问题不能透漏，只能告诉大家试题的比较接近实践，覆盖面也比较广。笔试给了大概有四十分钟的时间，我只写了一半的题目（一共四道题，从里面任选三个解答，我写了两道）可能是好久不写字，字体有点丑，好在面试官没有在乎这个……</p>
-<p>总结一下为什么时间不够的问题：</p>
-<ol>
-<li>前面填写个人信息花费了时间</li>
-<li>前面两道题写的过于详细，挤压了后面的答题时间</li>
-</ol>
-<p>写完题之后，被带到一个座位上。</p>
-<p>过来一个面试官，是一个和善的老大哥。面试官问了一些关于技术上的问题，主要问的都是Java基础的知识，比如面向对象、Java集合框架、Java多线程相关的知识。</p>
-<p>前面问的时候还是很紧张的，后面进入状态之后感觉自己回答的还可以。</p>
-<p>后面问到线程相关的知识，面试官很诧异问我回答的还可以，怎么最后一题没有写（最后一题是线程相关的问题），我说时间不太够了。面试官又重新给我十分钟的时间让我写这道题，当时有点慌张，虽然这个题有思路，但是毕竟自己没有用代码实现过，可能会出现代码格式乱七八糟的问题。博主在之前就因为这个被挂过面试……</p>
-<p>面试官很善解人意的跟我说，你在这写，我不看着你，你别紧张。我的妈呀，从来没见过这么和善的面试官，相信大家都有过被老师盯着，然后一个字写不出来的情况，面试官这个举动让我直接对这家公司的好感拉满。</p>
-<p>大概十分钟过去，面试官在旁边跟我说，不需要局限语法，思路写出来就行了，当时已经写的差不多了，还差几行代码。可能因为自己字比较大，留的空隙不是很够，还有重要代码没有写出来。</p>
-<p>后面又来了一个老哥面试我，能够认出来他就是公司创始人孙总。孙总来了之后，之前面试我的面试官又问了一些关于数据库的问题，说实话，两个面试官同时问我还是有点紧张的……甚至很多基础上的东西都没答上来，背地里狠狠抽自己两巴掌，同时感觉自己的心态需要进行一些调整。</p>
-<p>除了数据库之外，又问了一些关于我之前实习的问题，让我讲了一些实际上的例子。后来孙总问了我一个问题为什么要用HDFS，当时我说了一下自己的理解，孙总都说不对。今天早上我睡得迷迷糊糊的时候，我才突然想起来，答案就在HDFS名字里面呀！Hadoop<strong>分布式</strong>文件系统嘛！HDFS可以做高可用，文件系统不行。HDFS遵循计算向数据移动，文件系统不行。HDFS可以做并行运算，关系型数据库不行。</p>
-<p>后面又问了一些关于我自己认知的问题，比如我有什么优点等等。</p>
-<p>面试过后，我提了两个问题，一个就是问公司的性质，是不是一个外包公司，孙总跟我解释，他们是做一个技术承包的公司，有的公司没有技术部门，他们作为一个技术承包的存在，并且与合作公司长期合作进行产品迭代。另一个问题就是我恳请两个面试官对我进行点评，其中一个面试官说我有点紧张，被无情看穿了…话说面试当然有点紧张了，还是面对技术大佬的情况下，生怕自己哪个技术理解错了就被大佬心底无情嘲笑。后面孙总点评的比较多，点出了我的一个缺点，比如对于自己的职业评估会出现偏差，这点我是承认的，之前因为没有对自己的职业进行正确评估，自己浪费了很多精力和时间去学习自己不感兴趣的方向。不过也不能说是浪费时间，毕竟走过不适合的道路才知道什么是自己想要的。</p>
-<p>这次面试的体验非常好，两个面试官和善不说，主要是愿意引导你一步一步阐述自己的知识架构，并且尽量保持面试者轻松心态、发挥面试者的真实水平。</p>
-<p>今天要做的事情比较多，办理入职需要的材料，注销之前不用的招商银行卡，办理入职需要的工商银行卡。把握最后一天的自由人身份，以后时间可就不多了。碰巧上海该死不死的下雨了，但是总不能放朋友鸽子吧，去城隍庙的计划大概率泡汤了，希望晚上不要下了，还想再品尝一下外滩的夜景。</p>
-]]></content>
-      <categories>
-        <category>面试</category>
-      </categories>
-      <tags>
-        <tag>面试</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>让人头疼的多线程：CRUD用得到多线程？</title>
-    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。</p>
-<a id="more"></a>
-
-<h2 id="嘛是多线程？"><a href="#嘛是多线程？" class="headerlink" title="嘛是多线程？"></a>嘛是多线程？</h2><p>线程：程序执行的最小单位。线程线程，一条线上的程序，我们把程序的执行当作一条线，从头到尾，中间可能有打结（循环结构），分叉（判断结构），但是并不影响我们从线头撸到线尾。</p>
-<p>上面是单线程的情况，多线程就是有很多根线，CPU走走这条线，跑跑那条线，不专注在一棵树上吊死。</p>
-<p>举一个生活中的例子，某妹子是一个专业养备胎二十年的老女神。她为了维护自己的女神形象无法让这些备胎见面，所以她只能敷衍过一个备胎之后再敷衍另一个备胎。某一天早晨，备胎A发消息说给女神买了早餐，一分钟后备胎B给女神发了早安，女神是应该先吃完A的早餐之后再回复备胎B，还是先回复备胎B的早安然后继续等A的早餐呢？</p>
-<p>答案很明显是先把B的早安回了，毕竟闲着也是闲着不是？这个例子中女神就是CPU，两个备胎就是线程，是否知道线程的作用了呢？如果这个例子是单线程的，就会出现这种情况：备胎A给女神买了早餐，女神开始等待备胎A的早餐，一分钟后备胎B给女神发了早安，女神并没有看到，因为女神呆呆望着门口等待A的早餐，更别说回复了。</p>
-<p>多线程的意义就在于此，把CPU等待IO的时间充分利用起来，CPU等待IO的时候，就给它安排计算，无情压榨。</p>
-<p>既然多线程这么香，为什么不到处都用多线程呢，两个表达式就开一个线程岂不是速度飞起？</p>
-<p>多线程还是有缺点的：</p>
-<ol>
-<li>线程的切换需要消耗系统资源。</li>
-<li>线程的创建需要消耗大量系统资源。</li>
-<li>线程之间的安全问题比较复杂。</li>
-<li>多线程有可能发生死锁。</li>
-<li>线程会占用额外的内存空间。</li>
-</ol>
-<p>这些缺点有些是可以避免的，能否避免、怎样避免就是我们为什么要学习多线程技术，也是多线程技术复杂的原因，因为它必须解决这么多的多线程缺陷。</p>
-<h2 id="CRUD用得到多线程？"><a href="#CRUD用得到多线程？" class="headerlink" title="CRUD用得到多线程？"></a>CRUD用得到多线程？</h2><p>有同学要问了，我开发的项目都是用的Spring，无非就是增删改查，哪里用得到多线程嘛。</p>
-<p>我们来看一段代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserInfo <span class="title">getUserInfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户id查询用户信息</span></span><br><span class="line">        <span class="keyword">return</span> userInfo;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderInfo <span class="title">getOrderinfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户Id查询该用户的订单信息</span></span><br><span class="line">        <span class="keyword">return</span> orderInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>假设我们有一个界面需要调用这两个Service层方法，也就是某一Controller调用了这两个方法，并且将查询到的用户信息和订单信息打包成一个JSON字符串，而服务器架构是这样的：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717123728495.png" alt="image-20200717123728495"></p>
-<p>静态服务器做负载均衡，接收用户请求，动态服务器（Tomcat）集群用处理请求进行运算，数据库服务器存储数据。</p>
-<p>如果不使用多线程，那么两个方法顺序执行，是这样的步骤：</p>
-<ol>
-<li>静态服务器接收到用户请求</li>
-<li>静态服务器转发请求给动态服务器</li>
-<li>动态服务器处理请求，先调用getUserInfo()方法向数据库服务器查询数据</li>
-<li>数据返回到动态服务器，动态服务器调用getOrderInfo()方法向数据库服务器查询数据</li>
-<li>数据解析成JSON字符串数据给静态服务器</li>
-</ol>
-<p>观察第4-5步，动态服务器调用getUserInfo方法之后需要向数据库服务请求数据，此时CPU进入闲置状态，因为CPU在等待数据库服务器返回数据，假设动态服务器到数据库服务器需要0.5s，那么这0.5s中大概有0.45s都是在浪费CPU。</p>
-<p>使用多线程就不一样了，动态服务器向数据库服务器查询UserInfo数据的要求之后，该线程继续等待数据的返回，而是另一线程则紧接着发送查询OrderInfo数据的请求，并且自己等待数据的返回。（没错，这个叫做异步）</p>
-<p>悄咪咪地说一句，Spring针对这种异步情况提供了一个注解——@Async，有时间讲一讲。</p>
-<h2 id="创建多线程"><a href="#创建多线程" class="headerlink" title="创建多线程"></a>创建多线程</h2><p>学习多线程的第一步当然是创建几个多线程玩玩啦！</p>
-<p>创建多线程有两种方式：</p>
-<p>继承Thread并且重写run方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread0().start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>实现Runnable接口重写run方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Thread0()).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>最终还是要把Runnable类传递到Thread中，Runnable也就图一乐，真要用线程还是Thread。既然如此为什么要使用Runnable呢？因为Java不支持多继承，一个类只能有一个爹，而且实现Runnable接口更能体现面向接口编程的开发理念。</p>
-<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>通过Thread的源码我们可以得知Java线程一共有六种状态：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> State &#123;</span><br><span class="line">    NEW,</span><br><span class="line">    RUNNABLE,</span><br><span class="line">    BLOCKED,</span><br><span class="line">    WAITING,</span><br><span class="line">    TIMED_WAITING,</span><br><span class="line">    TERMINATED;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">State</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>NEW：新建状态，线程对象刚创建，还没有调用start()方法跑起来。这里提一句，run方法和start方法一定要分清楚，run方法是你告诉计算机打算开启一个新线程运行run方法中的代码，start方法才是开始新线程。</p>
-<p>RUNNABLE：就绪状态，表示线程随时都可以运行，这个状态可能发生在刚调用线程的start方法、sleep方法时间到了，从wait状态被唤醒、CPU正常切换到另一个线程。</p>
-<p>BLOCKED：阻塞状态，表示线程暂时不能运行，处于等待锁的状态，例如运行到synchronized关键字。</p>
-<p>WAITING：等待状态，表示线程当前正在等待另一线程唤醒，通常使用wait()，join()等进入。</p>
-<p>TIMED_WAITING：带时间的等待状态，例如sleep方法，时间到了就自然进入RUNNABLE状态。</p>
-<p>TERMINATED：销毁状态，线程逻辑也就是run()方法执行完毕，不需要再调度该线程。</p>
-<p>用一个图可以表示这六种状态的相互转换：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717141332216.png" alt="image-20200717141332216"></p>
-<p>可以把这几种状态比作皇帝后宫妃子的状态。</p>
-<p>NEW：选进宫中，进行培训（哪有刚来就被皇上宠幸的）。</p>
-<p>RUNNABLE：随时可以被翻牌子，等待皇上宠幸。</p>
-<p>BLOCKED：被得宠的妃子欺压，打进冷宫，等到得宠的妃子释怀（释放锁）才能继续被皇上宠幸。</p>
-<p>WAITING：不孕不育，除非别的妃子或者来了神医，否则皇上再也不宠幸你了。</p>
-<p>TIMED_WAITING：来大姨妈，时间到了恢复可以被皇上宠幸的状态。</p>
-<p>TERMINATED：完成妃子的终极目标，怀孕了……不用伺候皇上了。</p>
-<p>有一说一，感觉全网没有比这个更加形象的比喻了……但是BLOCKED的比喻不是很符合，凑合看吧。</p>
-<h2 id="线程相关的方法"><a href="#线程相关的方法" class="headerlink" title="线程相关的方法"></a>线程相关的方法</h2><p>讲过了线程状态的切换，下面就需要讲一讲线程之间切换状态所使用的方法了。线程相关的方法按照调用方式可以分为三种，对象方法，该方法属于对象，由对象调用；静态方法，该方法属于Thread类，调用该方法会作用于调用者；Object继承的方法，该方法继承自Object类。</p>
-<h3 id="对象方法"><a href="#对象方法" class="headerlink" title="对象方法"></a>对象方法</h3><p><strong>start()：</strong>这个方法使线程从NEW状态变为RUNNABLE状态</p>
-<p><strong>getState()：</strong>获取线程当前的状态</p>
-<p><strong>interrupt()：</strong>中断当前线程</p>
-<p><strong>join()：</strong>等待指定线程完事才能继续运行，如果使用有参的join()方法的话，就是等指定线程完事或者经过指定毫秒。被插队的线程进入WAITING状态。</p>
-<p>上面是Thread对象的常用方法（其他getter和setter方法就不列出来了）。</p>
-<p>简单说一下interrupt()方法吧。</p>
-<p><strong>中断：</strong>用一把剪刀把线程剪短，不让线程继续进行下去。然而Java中的中断机制并没有剪刀剪线头那么利落。Java中调用interrupt()方法是给线程一个中断标记，具体怎样处理还是要看线程自己，线程觉得自己工作很重要，就不理会中断标志位，而是继续执行下面的语句。</p>
-<p>还有两个名字很像的方法难以区分，interrupted和isInterrupted。interrupted()是个静态方法，返回当前线程的中断状态（不管你是调用哪个线程对象的interrupted()方法，这条语句哪个线程执行就是哪个线程的中断状态），并且清除线程的中断标记。isInterrupted()不是静态方法，返回线程对象的中断状态，不会清除中断标记。</p>
-<p>说到中断，曾经有一个stop()方法可以强制结束线程的生命，后来被弃用了。调用线程对象的stop方法会立刻释放该线程对象的锁和线程资源。例如一个程序在转账过程中被中断，转出成功但是还没转入目标账户，用户钱凭空消失！你永远也不知道调用一个线程的stop()方法时这个线程在干什么。所以现在中断方式由命令中断，改为请求中断，由线程自己决定要不要中断。</p>
-<h3 id="静态方法"><a href="#静态方法" class="headerlink" title="静态方法"></a>静态方法</h3><p><strong>sleep()：</strong>调用该方法的线程会进入TIMED_WAITING状态，等待事件结束之后，自动恢复RUNNABLE状态。</p>
-<p><strong>yield()：</strong>放弃当前的CPU使用权，也就是皇上翻了某妃子的牌子，妃子说皇上您再重新选一次，皇上有可能再次翻该妃子的牌子，也有可能翻其他妃子的牌子。</p>
-<p><strong>interrupted()：</strong> 这个讲过了，请看上面中断部分。</p>
-<p><strong>currentThread()：</strong>获取当前线程的线程对象。例如我们实现Runnable接口的时候，此时当前线程对象是Runnable类型，无法使用上一章节的非静态方法，此时可以调用currentThread()方法获取Thread对象，然后通过对象来调用非静态方法。</p>
-<p><strong>activeCount()：</strong>返回当前线程组存活的线程。</p>
-<h3 id="Object的遗产方法"><a href="#Object的遗产方法" class="headerlink" title="Object的遗产方法"></a>Object的遗产方法</h3><p><strong>wait()：</strong>这个方法是从Object继承过来的，它会让线程释放锁，并且进入WAITING状态。看起来和sleep很相似，后面会详细讲解wait和sleep的区别。</p>
-<p><strong>notify()/notifyAll()：</strong> 这两个方法也是从Object继承过来的，notify方法会唤醒处于wait的线程。</p>
-<p>注意：wait()和notify()都必须放在同步代码块或者同步方法中。</p>
-<h3 id="wait-方法和sleep-方法的区别"><a href="#wait-方法和sleep-方法的区别" class="headerlink" title="wait()方法和sleep()方法的区别"></a>wait()方法和sleep()方法的区别</h3><p>上面我们了解到wait方法和sleep方法都会让线程进入WAITING/TIMED_WAITING状态，两者有以下区别：</p>
-<ol>
-<li>血统不同：wait方法继承自Object，而sleep是Thread类的一个静态方法。</li>
-<li>对待锁的方式不同：sleep不会释放锁，只是把CPU让出来。wait不仅会让出CPU，还会释放锁。</li>
-<li>运行环境不同：sleep在哪都可以运行，wait只能运行于同步代码块/同步方法中</li>
-</ol>
-<h2 id="线程的属性"><a href="#线程的属性" class="headerlink" title="线程的属性"></a>线程的属性</h2><p><strong>线程优先级：</strong>在Java中，每个线程都有自己的优先级，并且子类可以继承父类的优先级。可以通过getter和setter方法获取或者设置线程的优先级。Java将线程的优先级分为10个等级，并且提供了三个常量：MIN_PRIORITY=1;MAX_PRIORITY=10;NORM_PRIORITY=5。</p>
-<p>线程调度器准备执行新线程时，会优先选择较高优先级的线程，但是线程优先级依赖于系统。不同的平台可能对线程的优先级处理不同，例如Windows中线程的优先级分为七个等级，而Oracle为Linux提供的JVM没有线程优先级这个概念，所有线程优先级是平等的。</p>
-<p>所以不要过度依赖线程优先级，程序的正确性如果依赖于线程优先级，那么不同的平台可能会出现不同结果。</p>
-<p>另外，低优先级的线程可能一直无法执行，导致低优先级的线程饿死。</p>
-<p><strong>守护线程：</strong> Java中设置了一个标志位——Daemon，这个标志位表示该线程是否是一个守护线程。先来介绍一下守护线程，守护线程唯一的作用就是给其他线程提供服务，例如提供计时功能。</p>
-<p>值得讨论的是守护线程的生命周期，守护线程不是妃子，守护线程是妃子的丫鬟，当所有的妃子都嗝屁了之后，守护线程也会随之嗝屁，因为守护线程没有提供服务的对象了，也就没有存在的必要了。</p>
-<p>这里提醒大家：千万不要让守护线程访问数据库，就像之前说的stop方法一样，你永远不知道守护线程什么时候嗝屁了。</p>
-<p><strong>线程组：</strong> 为了方便管理线程，Java推出了线程组这一概念。Thread的构造方法提供了线程组的参数，传入所在线程组的对象。假设A线程创建了B线程，并且B线程的构造方法没有设置线程组对象，那么默认B线程和A线程同属于一个线程组。</p>
-<p>然而，大家在程序中尽量避免使用线程组。因为Java引入了更好的线程管理集合。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
-<ol>
-<li>什么是多线程</li>
-<li>多线程关Spring CRUD什么事</li>
-<li>线程的状态和转化</li>
-<li>线程相关的方法</li>
-<li>wait和sleep方法的区别</li>
-<li>线程的属性</li>
-<li>线程优先级好不好使？</li>
-<li>守护线程是个啥？</li>
-</ol>
-<p>多线程的知识还是有点多的，尽管都是很基础的东西，但是以自己的水平写出来还是比较吃力的。这篇博客写了两天，还是有很多知识没有提及，比如多线程中的异常处理机制。有时间的话再另写一篇博客补充上去吧。</p>
-]]></content>
-      <categories>
-        <category>多线程</category>
-      </categories>
-      <tags>
-        <tag>多线程</tag>
-        <tag>并发</tag>
       </tags>
   </entry>
 </search>
