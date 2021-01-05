@@ -1897,4 +1897,42 @@
         <tag>面试</tag>
       </tags>
   </entry>
+  <entry>
+    <title>分布式即时聊天解决方案</title>
+    <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
+<ol>
+<li>websocket连接池和用户多地登录解决方案。</li>
+<li>EOFException出现原因及解决方案。</li>
+<li>分布式服务器消息同步解决方案。</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="websocket连接池"><a href="#websocket连接池" class="headerlink" title="websocket连接池"></a>websocket连接池</h2><p>首先客朵使用了ConcurrentHashMap作为连接池，userId作为Key，session作为value，但是问题随之而来，当用户多地登录的时候，后登录的用户会挤掉先登录的用户。导致先登录的用户无法正常收发消息。</p>
+<p>这里有两种方案：</p>
+<ol>
+<li>允许元素重复的、线程安全的<strong>CopyOnWriteArrayList</strong>作为连接池，但是在发送消息是需要从头进行遍历，导致性能下降，在并发量超过一定值的时候就会导致发送缓慢，每次发送的时间复杂度都是O(n)。</li>
+<li>仍旧使用<strong>ConcurrentHashMap</strong>作为连接池，userId作为key，但是value需要使用<strong>List</strong>，该List中存放userId相同的Session。这种方案相较于方案一来说速度更快，但是对内存的消耗略大于方案一，并且实现起来也稍微复杂一点。</li>
+</ol>
+<h2 id="EOFException出现原因及解决方案。"><a href="#EOFException出现原因及解决方案。" class="headerlink" title="EOFException出现原因及解决方案。"></a>EOFException出现原因及解决方案。</h2><p>其次在开发过程中每次链接三分钟就会出现EOFException，随后断开连接，最后定位到是nginx负载均衡对长时间无数据交互做了限制，阿里云默认为1分钟断开连接。为了保证用户长时间五交互不断开，所以加入了心跳检测机制，Clidoo项目是由前端进行心跳检测的，很多复杂的逻辑都由前端执行。</p>
+<p>前端执行：前端使用定时器发送心跳包，如果超过n个心跳包没有收到回复，就选择重连。具体的实现逻辑可以去询问前端 @杨弋。</p>
+<p>后端需要对心跳检测进行及时的回复确认。这里前端发送的东西和回复的东西没有特殊要求，前后端协调好就可以。</p>
+<h2 id="分布式服务器消息同步解决方案"><a href="#分布式服务器消息同步解决方案" class="headerlink" title="分布式服务器消息同步解决方案"></a>分布式服务器消息同步解决方案</h2><p>由于web socket 使用Session进行传递消息，Session存储在内存中，那么就会出现一种情况，用户A给用户B发送消息，该消息经过负载均衡分配到了服务器B来处理该请求，假如用户B连接web socket的session在服务器B上，那么就不会有异常发生，可以正常收发消息。但是，如果用户B连接的服务器是A服务器，那么对于服务器B来说，用户B是不在线的。这条消息就不能及时发送给用户B。</p>
+<p>为了解决分布式服务器消息同步的问题，这里提供两种方案：</p>
+<ol>
+<li>Session共享</li>
+<li>Session同步</li>
+</ol>
+<p>方案1中的Session共享就是将Session的存储地由内存改为多台机器可以公用的缓存池。方案2中的Session同步就是有新连接的时候，将Session进行copy。</p>
+<p>很明显，方案1是优于方案2的。</p>
+<p>(未完待续……)</p>
+]]></content>
+      <categories>
+        <category>work log</category>
+      </categories>
+      <tags>
+        <tag>SpringBoot</tag>
+        <tag>message</tag>
+      </tags>
+  </entry>
 </search>

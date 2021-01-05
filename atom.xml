@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://blooog.top/"/>
-  <updated>2020-08-06T02:31:33.760Z</updated>
+  <updated>2021-01-05T08:03:13.851Z</updated>
   <id>https://blooog.top/</id>
   
   <author>
@@ -15,6 +15,34 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>分布式即时聊天解决方案</title>
+    <link href="https://blooog.top/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <id>https://blooog.top/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</id>
+    <published>2021-01-05T08:00:53.000Z</published>
+    <updated>2021-01-05T08:03:13.851Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;strong&gt;INTRO：&lt;/strong&gt;Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;websocket连接池和用户多地登录解决方案。&lt;/li&gt;
+&lt;li&gt;EOFException出现原因及解决方案。&lt;/li&gt;
+&lt;li&gt;分布式服务器消息同步解决方案。&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+      <category term="work log" scheme="https://blooog.top/categories/work-log/"/>
+    
+    
+      <category term="SpringBoot" scheme="https://blooog.top/tags/SpringBoot/"/>
+    
+      <category term="message" scheme="https://blooog.top/tags/message/"/>
+    
+  </entry>
   
   <entry>
     <title>小鲸鱼Docker：Docker入门</title>
