@@ -1,121 +1,202 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>白话Spring（一）：SpringIOC到底是个啥？</title>
-    <url>/%E7%99%BD%E8%AF%9DSpring%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringIOC%E5%88%B0%E5%BA%95%E6%98%AF%E4%B8%AA%E5%95%A5%EF%BC%9F/</url>
-    <content><![CDATA[<p><strong>INTRO:</strong> 学习过Spring框架的人一定都听过Spring的IoC(控制反转) 、DI(依赖注入)这两个概念，对于初学Spring的人来说，这两个概念还是比较难懂的，所以博主就用大白话的给初学者讲一下这两个概念。</p>
+    <title>Redis学习笔记（一）：Redis基础入门</title>
+    <url>/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong> 在实际开发过程中，我们会经常用到Redis，作为一个高速缓存数据库，我们该从哪里开始学习呢？本文参考Redis文档作为大纲编写，从这篇博客开始开辟Redis这个高速公路。</p>
 <a id="more"></a>
 
-<p>开门见山，我们先来一个没有IOC的程序例子：</p>
-<p>Dao层代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoImpl</span> <span class="keyword">implements</span> <span class="title">UserDao</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">selectUserFrominfo</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">    	<span class="comment">//操作数据库代码</span></span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Redis是个啥？"><a href="#Redis是个啥？" class="headerlink" title="Redis是个啥？"></a>Redis是个啥？</h2><p>Redis本质上是一个以key-value存储的数据库。那么key-value数据库可太多了，我们为什么都用redis呢？</p>
+<p>因为Redis是一个内存数据库，并且支持数据持久化，这里解释一下数据持久化。</p>
+<p><strong>数据持久化：</strong>其实这个词学过数据库的都会知道什么意思，但是照顾下初学者（顺便凑凑字数）还是说一说。我们以前的程序都是在内存玩玩，包括我们第一个程序HelloWorld也好，各种排序算法也好，这些东西都是在内存中的。只要我们关闭程序或者计算机断电，所有的东西就都没了（参考老版本的Word文档）。那么我们的数据存在哪里才不会受到这种限制呢？那当然是硬盘啦！像Mysql、Oracle这种就是将数据存进硬盘中，那么问题来了，硬盘它读写速度慢啊！访问量一上去，读写速度直接成为系统瓶颈。于是有大佬想出一个办法，我把常用数据存在内存中不就行了吗？Redis就在这种背景下横空出世。</p>
+<p><strong>Redis的优势</strong>： 刚才讲到Redis的出生背景，可能有些人开始疑惑了，这不是开倒车吗？刚说完数据持久化，你就把数据放到内存了。万一服务器断电，数据不就没了？大佬毕竟是大佬，只要大佬高可用做的好，灾难就追不上大佬。Redis支持主从模式的数据备份，主挂了，我还有从呢！Redis支持数据持久化，可以把数据存进硬盘中，等到重启的时候再拿出来用。（大胆猜测下，向Redis写入数据时，Redis需要做三件事：存数据到主节点内存；同步数据到从节点；同步数据到硬盘。我们在学习过程中再看到底是不是这样。）</p>
+<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><p>入门第一步当然是先安装主角啦！进入<a href="https://redis.io/" target="_blank" rel="noopener">Redis官网</a>寻找Download关键字，看到Download相关的点进去就完事了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709100113889.png" alt="image-20200709100113889"></p>
+<p>点击一下，直接就下载了。默认时linux版本的gz文件，如果你想下载windows版本的可以在这里<a href="https://github.com/tporadowski/redis/releases" target="_blank" rel="noopener">gayhub</a>下载安装。我这里有一台Linux服务器，我就使用linux版本了。希望大家有条件的可以创建虚拟机来操作Linux。</p>
+<p>偷偷告诉大家一个小技巧，win10自带的Powershell可以直接使用ssh/scp来链接服务器或者上传文件。</p>
+<p>我这里使用的ssh工具是Termius，好用倒是没多好用，就是界面美观。scp就用Powershell了。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709102039501.png" alt="image-20200709102039501"></p>
+<p>不得不说微软现在越来越开放了，像VS Code、Powershell等都支持跨平台了，我的青春结束了。</p>
+<p>来到服务器，在/root目录运行解压redis安装包</p>
+<blockquote>
+<p>tar -zxvf  redis-6.0.5.tar.gz</p>
+</blockquote>
+<p>进入目录并且编译</p>
+<blockquote>
+<p>cd redis-6.0.5/ &amp;&amp; make</p>
+</blockquote>
+<p>如果编译期间报错，那么就是你的gcc版本出现问题，两种解决方案：升级gcc；使用更低的Redis版本；</p>
+<p>*注意！生产环境中不可擅自升级gcc，凡事先问运维可不可以升级！</p>
+<p>我这里选择升级gcc，按顺序运行这些命令，然后</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">yum install -y cpp</span><br><span class="line">yum install -y binutils</span><br><span class="line">yum install -y glibc</span><br><span class="line">yum install -y glibc-kernheaders</span><br><span class="line">yum install -y glibc-common</span><br><span class="line">yum install -y glibc-devel</span><br><span class="line">yum install -y gcc</span><br><span class="line">yum install -y make</span><br><span class="line"></span><br><span class="line">yum -y install centos-release-scl</span><br><span class="line">yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils</span><br><span class="line">scl enable devtoolset-9 bash</span><br><span class="line"></span><br><span class="line">echo "source /opt/rh/devtoolset-9/enable" &gt;&gt;/etc/profile</span><br></pre></td></tr></table></figure>
 
-<p>Service层代码:</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    UserDao userDao;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserService</span><span class="params">(UserDao userDao)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.UserDao = userDao;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userDao.selectUserFrominfo(user);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-server</p>
+</blockquote>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709111549533.png" alt="image-20200709111549533"></p>
+<p>出现这个就说明Redis的server端启动起来了，可以通过redis内置的一个客户端与服务端进行交互。</p>
+<p>因为这个被占用了，另开一个ssh链接。</p>
+<p>运行命令</p>
+<blockquote>
+<p>src/redis-cli</p>
+</blockquote>
+<p>这个时候进入了redis命令行模式，我们输入set的时候，redis会自动给我们提示</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709112032802.png" alt="image-20200709112032802"></p>
+<p>小声bb：Mysql赶紧跟人家学学！</p>
+<p>然后，在命令行输入</p>
+<blockquote>
+<p>set hello world</p>
+</blockquote>
+<p>输出OK，表示我们已经完成了key-value的添加</p>
+<p>输入</p>
+<blockquote>
+<p>get hello</p>
+</blockquote>
+<p>输出 “world”</p>
+<p>至此一个简单的测试用例就完成了。如果你觉得安装redis还需要使用虚拟机有点麻烦，并且你不想redis占用资源，那么你可以通过<a href="https://try.redis.io/" target="_blank" rel="noopener">在线Redis</a>，来学习Redis。</p>
+<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><p>Redis的配置文件是位于安装目录下的<strong>redis.conf</strong>文件，可以通过Config来查看或者配置Redis。</p>
+<p>格式为：</p>
+<blockquote>
+<p>CONFIG GET CONFIG_NAME</p>
+</blockquote>
+<p>例如我们可以输入 CONFIG GET * 来查看所有的配置</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709125521604.png" alt="image-20200709125521604"></p>
+<p>从这里们可以看出配置文件的结构是两行为一个配置，奇数行是配置名，这个奇数行下面的偶数行是该配置项的值。</p>
+<p>也就是</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;配置名xxx&quot;</span><br><span class="line">2) &quot;xxx的值&quot;</span><br></pre></td></tr></table></figure>
 
-<p>Controller层代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span></span>&#123;</span><br><span class="line">    UserServiceimpl userService;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserController</span><span class="params">(UserService userService)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.userService = UserService;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> ModelAndView <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userService.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们会在后面的知识讲解这些配置项的含义。</p>
+<p>先使用CONFIG GET PORT查看redis日志的等级</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;notice&quot;</span><br></pre></td></tr></table></figure>
 
-<p>main方法</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    UserController userController;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(Stringp[] args)</span></span>&#123;</span><br><span class="line">        UserDAO dao = <span class="keyword">new</span> UserDAO();</span><br><span class="line">        UserService service = <span class="keyword">new</span> UserService(dao);</span><br><span class="line">        UserController controller = <span class="keyword">new</span> UserController(service);</span><br><span class="line">        controller.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用CONFIG SET CONFIG_NAME CONFIG_VALUE 的格式可以设置配置项的值，例如</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG SET loglevel warning</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
 
+<p>再查看的时候结果就变了。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;warning&quot;</span><br></pre></td></tr></table></figure>
 
+<p>题外话：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Warning: since Redis is pretty fast an outside user can try up to 150k passwords per second against a good box. This means that you should use a very strong password otherwise it will be very easy to break.</span><br><span class="line">因为redis速度太快，所以暴力破解密码也很快，如果你的redis地址暴露，数据安全岌岌可危。</span><br></pre></td></tr></table></figure>
 
-<p>可能有的同学要问，这不是挺好的吗？new一下可以实例化，也没浪费多大功夫嘛。</p>
-<p>在此回答此问题之前，我们需要了解一个软件工程上的知识点：</p>
-<p><strong>耦合度：</strong> 程序之间的依赖关系。我们可以通俗的讲依赖关系就是没有你，我办不成事。人越独立越好，模块也不例外，但是人又不可能完全独立于社会，就像模块不可能完全脱离系统，而消除这种依赖关系的过程就是解耦。</p>
-<p>再来看上面的代码，有哪些弊端呢？</p>
-<ol>
-<li>创建繁琐，每一层我们都需要创建下一层的对象，这个我们能忍，毕竟我们是勤劳勇敢的中国人民，麻烦点不算什么，下面的就不好搞了。</li>
-<li>违反面向接口编程的原则，每一层都直接new一个对象，后期更换接口需要工作量爆表。</li>
-<li>在这一串调用链中，上层知道下层是如何创建的，上层还需要自己动手创建下层。就好比没有人力资源管理的公司，任何人事的调动都需要该职员的上司进行处理，上下层的耦合性飙升。</li>
-<li>开发人员不能专心编写业务逻辑，编写业务逻辑代码时还需要自己连接数据库+自己创建Dao+记住数据库密码。</li>
-</ol>
-<p>如果使用IOC呢？彻底推翻上述的所有弊端，唯一的缺点就是增加那么一丢丢的学习成本，以及添加那么”亿”丢丢的配置文件。当然这两个缺点第一个是值得的，第二个则被SpringBoot给摆平了。</p>
-<p>简单了解IOC有什么用之后，我们再来看IOC到底什么意思。</p>
-<p><strong>IOC——控制反转：</strong>有反就有正，所谓的正就是我们在程序中new一个对象出来，我们就开始控制这个对象的生命周期，反转之后呢？<del>这个对象开始控制我们的生命周期</del>（删）我们将对象生命控制权交给Spring，由Spring给我们new对象出来。Spring在这个过程中扮演的就是一个人力资源管理部门的角色，作为大老板的我们应该将精力放到业务逻辑上。 而这些被管理的职员，我们通常称之为Bean。Bean又是什么呢？为什么名字这么奇怪？</p>
-<p>Bean这个词并非起源于Spring，只是最近二十年开发者大多都是从Spring中接触到Bean这一名词，Bean的起源年代久远，当初Java还抱着幻想反攻桌面端，但是被微软的VB打的满地找牙。当时微软大推模块化，在IDE中通过拖拽就可以给界面添加各种组件。Java开源社区急了，这种好东西我们也要有，于是大家商量着整出一套规范——JavaBean。通过这个规范就可以让IDE根据反射快速的构建界面，然而没人买账……现在回答Java Bean是什么？Java Bean是一种规范，而Bean就是遵从这个规范的类。你要是问为什么叫Bean而不叫其他什么，那就只能说Java Bean合在一起叫做咖啡豆，起这个名字的人觉得好玩。</p>
-<p><strong>Java Bean规范了什么？</strong> 上面说了JavaBean是一种规范，那么规范了什么呢？主要规范了以下四点：</p>
-<ol>
-<li><p>所有属性使用private</p>
-</li>
-<li><p>给private标记的属性添加getter/setter方法</p>
-</li>
-<li><p>实现序列化</p>
-</li>
-<li><p>具有默认的构造函数（无参的构造函数） </p>
-</li>
-</ol>
-<p>控制反转和我们平常使用的Maven很像，没有Maven的时候，我们需要将所需的依赖包一个个下载好，放到lib文件夹中。有了Maven之后，我们只需要在配置文件中配置上该App所需的所有依赖包，是不是很方便？假如我们需要更换依赖版本，只需要在pom.xml文件中修改版本号，Maven就会自动给我们导入依赖包。相对应的，我们需要更改某一接口的实现类的时候只需要修改注释/配置文件就可以了。</p>
-<p>那么怎么告诉Spring这些依赖关系呢？我们可以通过注释或者xml配置文件的方式。</p>
-<p><strong>注解方式的IOC：</strong>IOC相关的注解很多，但是总体可以分为两类组件注册和组件加载。</p>
-<p>组件注册注解是由@Component注解及其一堆小弟组成的，像业务层的@Service、控制层的@Controller、数据操作层的@Repository。这些小弟可以被@Component代替，但是还是推荐层次更明确的小弟注解。这些注解的作用是告诉Spring哪些类需要你控制，Spring把这些类变成Bean实例，这些实例的名字使用变量类似的驼峰命名法，也就是将类的首字母变为小写，其他不变。注册Bean的过程也就是告诉人力资源部门哪些人是我们公司的职员。当然Spring不知道从哪里找这些组件，你需要在配置文件中配置Spring扫描哪些包。</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- </span></span><br><span class="line"><span class="comment">	首先通过context命名空间引入component-scan配置</span></span><br><span class="line"><span class="comment">	component： 组件</span></span><br><span class="line"><span class="comment">	scan： 扫描</span></span><br><span class="line"><span class="comment">--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"org.exmples.*"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h2><p>Redis支持五种基本的数据结构：</p>
+<p><strong>String：</strong>这是Redis中最基本的元素，它不仅仅可以存储我们日常中的字符串，它还能存储一些音乐、图片，甚至序列化之后的Java对象(你想到了什么？)，一个String最多可以存储<strong>512MB</strong>的内容。</p>
+<blockquote>
+<p>SET url “blooog.top”</p>
+<p>OK</p>
+<p>GET url</p>
+<p>“blooog.top”</p>
+</blockquote>
+<p><strong>Hash：</strong> Redis中的Hash是一系列键值对的集合，类似于Java中的Map，Hash本质上是String类型的field和String类型的value的映射表，一个Hash映射表可以存储2<sup>32</sup> -1个键值对。</p>
+<p>我们在Redis命令行敲上HMSET 出现一串提示：</p>
+<blockquote>
+<p>HMSET key field value [field value ……]</p>
+</blockquote>
+<p>根据这个结构我们输入一个Hash</p>
+<blockquote>
+<p>HMSET user:admin name zhouxx url blooog.top post redis</p>
+</blockquote>
+<p>然后使用命令</p>
+<blockquote>
+<p>HGETALL user:admin</p>
+</blockquote>
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;name&quot;</span><br><span class="line">2) &quot;zhouxx&quot;</span><br><span class="line">3) &quot;url&quot;</span><br><span class="line">4) &quot;blooog.top&quot;</span><br><span class="line">5) &quot;post&quot;</span><br><span class="line">6) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
 
-<p>这样Spring道了哪些包中的组件需要自己管理，又知道这些包中的类需要注册为什么类型。但是这些组件注册之后安排到什么岗位呢？那么就要用到组件加载相关的注解了。</p>
-<p>组件加载常用的有@Autowired，@Resource、@Qualifier。@Autowired是Spring中主要使用的注解，它可以通过成员变量/成员变量的setter方法/构造函数将依赖注入。这三个注解有什么区别呢？@Autowired和@Qualifier是Spring中自带的，而@Resource则是在javax.annotation包中。另外@Resource默认是通过名称加载，如果名字找不到，那么就通过类型注入。@Autowired则仅支持通过类型加载的，@Autowired可以和@Qualifier结合使用，可以通过类型和名称双限定加载。至于@Qualifier注解，它一般不单独使用。</p>
-<p>我们常用的方式就是@Autowired注解，所以@Resource注解的方式不再演示了。</p>
-<p>示例如下：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span>(<span class="string">"dependency"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="comment">//balabala</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>List：</strong> 类似于数组，里面可以存储 2<sup>32</sup> -1个String类型的元素，使用LPUSH命令可以进行存储，语法也比较简单，直接把要存进去的元素写在后面就行了。</p>
+<p>例如：</p>
+<blockquote>
+<p>LPUSH exlist zhouxx blooog.top redis</p>
+</blockquote>
+<p>取出元素可以使用LRANGE命令</p>
+<blockquote>
+<p>LRANGE exlist 0 5</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
 
+<p>注意，List中的顺序和们输入的顺序是相反的，为什么会这样呢？因为我们使用的是LPUSH，也就是按照输入的顺序从List左边插入。</p>
+<p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
+<p>使用SADD KEY ELE添加元素，例如：</p>
+<blockquote>
+<p>SADD exset zhouxx</p>
+<p>SADD exset blooog.top</p>
+<p>SADD exset redis</p>
+</blockquote>
+<p>使用SMAMERS zhouxx命令查看集合中的东西</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;zhouxx&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
 
+<p>同样的，Set中也可以存放2<sup>32</sup> -1个String类型的元素。</p>
+<p>注意：Set中仅能存放不同的元素，第二次插入的相同元素会无效。</p>
+<p><strong>Zset：</strong> 有序集合，Zset和Set相似，都不允许插入相同的元素，不同的是Zset中每个元素都有一个Score用来代表权值，Redis通过Score来进行排序。默认为正序，并且Score可以重复。</p>
+<p>使用 ZADD KEY SCORE ELE添加元素，例如：</p>
+<blockquote>
+<p>ZADD exzset 12.12 zhouxx</p>
+<p>ZADD exzset 11.11 blooog.top</p>
+<p>ZADD exzset 6.18 redis</p>
+</blockquote>
+<p>使用ZRANGEBYSCORE KEY START END命令读取SCORE区间内的元素</p>
+<blockquote>
+<p>ZRANGEBYSCORE  exzset 6.18 12.12</p>
+</blockquote>
+<p>结果如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
 
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">calss Exmple&#123;</span><br><span class="line">    <span class="comment">//通过成员变量注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@Qualifier</span>(<span class="string">"dependency"</span>)</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过构造方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Exmple</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过setter方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">      	<span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>以上三种注入方法，选择其一即可。这里提一句，不推荐使用成员变量直接注解的方式，而setter和构造方法各有优缺。下面聊聊这三种方式：</p>
-<p><strong>字段注入：</strong>又叫属性注入、field注入等等，这种方式代码简洁，编写方便，但是有很多缺点，缺点如下：</p>
-<ol>
-<li><p>在声明为 final 的字段上不可用，因为final修饰的关键字需要在类实例化的时候进行初始化，这种字段只能使用构造器注入。</p>
-</li>
-<li><p>与SpringIOC组件耦合，这种方式需要Spring通过反射将属性注入，除此之外没有任何办法（不嫌麻烦你可以使用反射，因为Spring也是这么干的）给这个属性赋值，在你进行单元测试的时候你还要呼叫Spring过来帮你初始化这个依赖，多麻烦呀。就好像你想找小a倒杯水，明明小a就在你隔壁，却还要让人力资源部门通知小a倒水。</p>
-</li>
-<li><p>隐藏依赖关系，字段注入的方式很简单，一个注解就搞定了。但是简单到让人忘记你到底有多少个依赖，让接手的人不知道哪个才是你的依赖。比如你在公司看到一个不干活的职员，你找人力资源部门说 “这小子哪个部门的？给我开了他！” 结果人力资源部门跟你说，这哥们送外卖的。 </p>
-</li>
-</ol>
-<p><strong>setter方法注入：</strong>这种方式有利有弊，我在小项目开发中一般使用这种方式，因为可以把setter方法藏到最后，代码看起来没那么臃肿。setter唯一的不足就是不能给final依赖注入，但是解决了字段注入的两个缺陷：</p>
-<ol>
-<li>解除SpringIOC组件的强耦合关系，依赖不仅可以使用Spring注入，也可以通过调用setter方法的方式注入依赖。 </li>
-<li>显示依赖关系，通过setter方法上的注释，我们可以知道这个类的依赖关系有哪些，哪些依赖关系需要Spring帮助我i们注入。</li>
-</ol>
-<p><strong>构造方法注入：</strong>这种注入依赖的方式是Spring官方指定推荐，也就是皇太子（虽然setter注入方式在Spring 3.x 中也是被推荐的那一位）。这种方式几乎没有任何缺点，唯一的缺点就是当你的依赖关系很多的时候，你的构造方法看起来不太美观。碰到这种情况，你就要考虑自己程序设计的是不是有问题了，是不是违背了单一职责原则（如果有机会就把设计原则讲一下，下次一定）呢？细数起来构造方法注入的方式优点如下：</p>
-<ol>
-<li>允许final关键字修饰的依赖注入，这个没得说，只有这位皇太子有这本事。</li>
-<li>依赖检查，重写了有参的构造函数，想实例化这个类就只能通过有参的构造函数完成初始化，万一有个依赖注入失败，那这个类就无法初始化。就好比开会的时候，Spring会告诉你某某某开会没来，这个会开不成，而不是像字段注入和setter方法注入中，让某某某干活了，某某某说我没开会（注入依赖） ，我空指针了。</li>
-</ol>
-<p>那么构造器注入的方式相较setter方法注入有什么不足呢？setter方法允许类构建之后重新注入。</p>
-<p><strong>总结来说：</strong> setter和构造方法各有优劣，每个都有自己不可替代的功能，相较于两位皇子来说，字段注入是不受宠的那个。在实际开发中还是推荐使用构造方法注入的方式。</p>
-<p><strong>XML配置文件的注入方式</strong> 讲完注解的方式注入依赖，来看一看开发环境中不是很常用的xml配置文件注入的的方式。XML有两种注入方式，构造器注入和setter方法注入，这两者的优劣类似于注解中两种方式的优劣。</p>
-<p>首先来看构造器注入的配置，写在applicationContext.xml中：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>依赖类Dependency：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Denpendency</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>测试类Test：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Test</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>示例中展示了Spring如何创建一个dependency示例并将该实例注入Test中，首先是&lt;bean&gt;标签的讲解，bean标签常用的两个属性id和class，id指定了这个bean在Spring中唯一的标识符，其他bean可以通过id引用该bean，其实相当于java中的标识符（名字！够清楚了吧）。class则指定了这个bean对应的类，也就是告诉Spring哪个类需要注册为id=xxx的bean。这个bean又有哪些属性或者依赖呢？通过&lt;constructor-arg&gt;标签中的两个常用属性value和ref，其中value是没有在Spring中注册的属性（什么是注册请看前面两句刚写的&lt;bean&gt;标签讲解），例如数据库密码、数据库驱动url等等。ref则表示在Spring中注册过的依赖，引用该依赖的方式是ref=“id”。</p>
-<p>还是人力资源管理部门的例子，value是公司外的资源，例如隔壁老王送水电话，村头小张仓库地址，这些资源不属于公司内部，没有被人力资源管理部门所管理，但是又被某职工所需要，那么在职工入职（注册为Bean）的时候将这些信息传给这个职工。ref又是个怎么回事呢？ref是公司给你安排的小弟，类似于Controller层，作为高层怎么能没有小弟呢？在空降领导的时候总得带着领导见见小弟吧？ref就是这么回事，你告诉Spring这个领导需要哪些小弟，Spring带着这些小弟<del>注入</del>接见领导，当然这些小弟都需要在Spring中注册过了，不然你还是要用value的方式注入依赖。</p>
-<p>看完了XML配置+构造器方法注入之后，再来看XML+setter方法的注入方式。</p>
-<p>同样是applicationContext中：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>依赖类Dependency：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDate</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>测试类Test：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>值得注意的是，与注解的方式不同，在类中必须有setter方法，否则Spring会报错。至于value和ref什么意思，刚讲过就忘啦？？？？</p>
-<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="# 写在最后"></a># 写在最后</h2><p>到这里，算是用最直白的话把我理解的Spring IOC和使用方式写出来了，因为本人水平限制，这篇文章一定还有纰漏，希望看官能够指点一下。</p>
-<p>因为都是用大白话讲解的，所以涉及的知识难免比较浅薄，目的只是为了帮助初学Spring的同学尽快的了解Spring，具体的深入还是需要大家多多实践。</p>
+<p>可以看出这个范围要求是双向闭区间。</p>
+<h2 id="Redis和它的二百命令"><a href="#Redis和它的二百命令" class="headerlink" title="Redis和它的二百命令"></a>Redis和它的二百命令</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
+<p>命令还是很多的（这个是真的有！），据官网上说，Redis有二百多条命令。</p>
+<p>Redis官方把根据命令负责的模块，将命令分为多个命令集，有了分类再掌握命令就方便了。官网也提供了快速查询的通道。</p>
+<p>英文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
+<p>中文版的翻译不是很全，但是一些经常用的命令都做了翻译。</p>
 ]]></content>
       <categories>
-        <category>Spring</category>
+        <category>Redis</category>
       </categories>
       <tags>
-        <tag>Spring</tag>
-        <tag>IOC</tag>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>小鲸鱼Docker：Docker入门</title>
+    <url>/%E5%B0%8F%E9%B2%B8%E9%B1%BCDocker%EF%BC%9ADocker%E5%85%A5%E9%97%A8/</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title>分布式即时聊天解决方案</title>
+    <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
+<ol>
+<li>websocket连接池和用户多地登录解决方案。</li>
+<li>EOFException出现原因及解决方案。</li>
+<li>分布式服务器消息同步解决方案。</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="websocket连接池"><a href="#websocket连接池" class="headerlink" title="websocket连接池"></a>websocket连接池</h2><p>首先客朵使用了ConcurrentHashMap作为连接池，userId作为Key，session作为value，但是问题随之而来，当用户多地登录的时候，后登录的用户会挤掉先登录的用户。导致先登录的用户无法正常收发消息。</p>
+<p>这里有两种方案：</p>
+<ol>
+<li>允许元素重复的、线程安全的<strong>CopyOnWriteArrayList</strong>作为连接池，但是在发送消息是需要从头进行遍历，导致性能下降，在并发量超过一定值的时候就会导致发送缓慢，每次发送的时间复杂度都是O(n)。</li>
+<li>仍旧使用<strong>ConcurrentHashMap</strong>作为连接池，userId作为key，但是value需要使用<strong>List</strong>，该List中存放userId相同的Session。这种方案相较于方案一来说速度更快，但是对内存的消耗略大于方案一，并且实现起来也稍微复杂一点。</li>
+</ol>
+<h2 id="EOFException出现原因及解决方案。"><a href="#EOFException出现原因及解决方案。" class="headerlink" title="EOFException出现原因及解决方案。"></a>EOFException出现原因及解决方案。</h2><p>其次在开发过程中每次链接三分钟就会出现EOFException，随后断开连接，最后定位到是nginx负载均衡对长时间无数据交互做了限制，阿里云默认为1分钟断开连接。为了保证用户长时间五交互不断开，所以加入了心跳检测机制，Clidoo项目是由前端进行心跳检测的，很多复杂的逻辑都由前端执行。</p>
+<p>前端执行：前端使用定时器发送心跳包，如果超过n个心跳包没有收到回复，就选择重连。具体的实现逻辑可以去询问前端 @杨弋。</p>
+<p>后端需要对心跳检测进行及时的回复确认。这里前端发送的东西和回复的东西没有特殊要求，前后端协调好就可以。</p>
+<h2 id="分布式服务器消息同步解决方案"><a href="#分布式服务器消息同步解决方案" class="headerlink" title="分布式服务器消息同步解决方案"></a>分布式服务器消息同步解决方案</h2><p>由于web socket 使用Session进行传递消息，Session存储在内存中，那么就会出现一种情况，用户A给用户B发送消息，该消息经过负载均衡分配到了服务器B来处理该请求，假如用户B连接web socket的session在服务器B上，那么就不会有异常发生，可以正常收发消息。但是，如果用户B连接的服务器是A服务器，那么对于服务器B来说，用户B是不在线的。这条消息就不能及时发送给用户B。</p>
+<p>为了解决分布式服务器消息同步的问题，这里提供两种方案：</p>
+<ol>
+<li>Session共享</li>
+<li>Session同步</li>
+</ol>
+<p>方案1中的Session共享就是将Session的存储地由内存改为多台机器可以公用的缓存池。方案2中的Session同步就是有新连接的时候，将Session进行copy。</p>
+<p>很明显，方案1是优于方案2的。</p>
+<p>(未完待续……)</p>
+]]></content>
+      <categories>
+        <category>work log</category>
+      </categories>
+      <tags>
+        <tag>message</tag>
+        <tag>SpringBoot</tag>
       </tags>
   </entry>
   <entry>
@@ -515,162 +596,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis学习笔记（一）：Redis基础入门</title>
-    <url>/Redis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ARedis%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong> 在实际开发过程中，我们会经常用到Redis，作为一个高速缓存数据库，我们该从哪里开始学习呢？本文参考Redis文档作为大纲编写，从这篇博客开始开辟Redis这个高速公路。</p>
-<a id="more"></a>
-
-<h2 id="Redis是个啥？"><a href="#Redis是个啥？" class="headerlink" title="Redis是个啥？"></a>Redis是个啥？</h2><p>Redis本质上是一个以key-value存储的数据库。那么key-value数据库可太多了，我们为什么都用redis呢？</p>
-<p>因为Redis是一个内存数据库，并且支持数据持久化，这里解释一下数据持久化。</p>
-<p><strong>数据持久化：</strong>其实这个词学过数据库的都会知道什么意思，但是照顾下初学者（顺便凑凑字数）还是说一说。我们以前的程序都是在内存玩玩，包括我们第一个程序HelloWorld也好，各种排序算法也好，这些东西都是在内存中的。只要我们关闭程序或者计算机断电，所有的东西就都没了（参考老版本的Word文档）。那么我们的数据存在哪里才不会受到这种限制呢？那当然是硬盘啦！像Mysql、Oracle这种就是将数据存进硬盘中，那么问题来了，硬盘它读写速度慢啊！访问量一上去，读写速度直接成为系统瓶颈。于是有大佬想出一个办法，我把常用数据存在内存中不就行了吗？Redis就在这种背景下横空出世。</p>
-<p><strong>Redis的优势</strong>： 刚才讲到Redis的出生背景，可能有些人开始疑惑了，这不是开倒车吗？刚说完数据持久化，你就把数据放到内存了。万一服务器断电，数据不就没了？大佬毕竟是大佬，只要大佬高可用做的好，灾难就追不上大佬。Redis支持主从模式的数据备份，主挂了，我还有从呢！Redis支持数据持久化，可以把数据存进硬盘中，等到重启的时候再拿出来用。（大胆猜测下，向Redis写入数据时，Redis需要做三件事：存数据到主节点内存；同步数据到从节点；同步数据到硬盘。我们在学习过程中再看到底是不是这样。）</p>
-<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><p>入门第一步当然是先安装主角啦！进入<a href="https://redis.io/" target="_blank" rel="noopener">Redis官网</a>寻找Download关键字，看到Download相关的点进去就完事了。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709100113889.png" alt="image-20200709100113889"></p>
-<p>点击一下，直接就下载了。默认时linux版本的gz文件，如果你想下载windows版本的可以在这里<a href="https://github.com/tporadowski/redis/releases" target="_blank" rel="noopener">gayhub</a>下载安装。我这里有一台Linux服务器，我就使用linux版本了。希望大家有条件的可以创建虚拟机来操作Linux。</p>
-<p>偷偷告诉大家一个小技巧，win10自带的Powershell可以直接使用ssh/scp来链接服务器或者上传文件。</p>
-<p>我这里使用的ssh工具是Termius，好用倒是没多好用，就是界面美观。scp就用Powershell了。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709102039501.png" alt="image-20200709102039501"></p>
-<p>不得不说微软现在越来越开放了，像VS Code、Powershell等都支持跨平台了，我的青春结束了。</p>
-<p>来到服务器，在/root目录运行解压redis安装包</p>
-<blockquote>
-<p>tar -zxvf  redis-6.0.5.tar.gz</p>
-</blockquote>
-<p>进入目录并且编译</p>
-<blockquote>
-<p>cd redis-6.0.5/ &amp;&amp; make</p>
-</blockquote>
-<p>如果编译期间报错，那么就是你的gcc版本出现问题，两种解决方案：升级gcc；使用更低的Redis版本；</p>
-<p>*注意！生产环境中不可擅自升级gcc，凡事先问运维可不可以升级！</p>
-<p>我这里选择升级gcc，按顺序运行这些命令，然后</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">yum install -y cpp</span><br><span class="line">yum install -y binutils</span><br><span class="line">yum install -y glibc</span><br><span class="line">yum install -y glibc-kernheaders</span><br><span class="line">yum install -y glibc-common</span><br><span class="line">yum install -y glibc-devel</span><br><span class="line">yum install -y gcc</span><br><span class="line">yum install -y make</span><br><span class="line"></span><br><span class="line">yum -y install centos-release-scl</span><br><span class="line">yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils</span><br><span class="line">scl enable devtoolset-9 bash</span><br><span class="line"></span><br><span class="line">echo "source /opt/rh/devtoolset-9/enable" &gt;&gt;/etc/profile</span><br></pre></td></tr></table></figure>
-
-<p>运行命令</p>
-<blockquote>
-<p>src/redis-server</p>
-</blockquote>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709111549533.png" alt="image-20200709111549533"></p>
-<p>出现这个就说明Redis的server端启动起来了，可以通过redis内置的一个客户端与服务端进行交互。</p>
-<p>因为这个被占用了，另开一个ssh链接。</p>
-<p>运行命令</p>
-<blockquote>
-<p>src/redis-cli</p>
-</blockquote>
-<p>这个时候进入了redis命令行模式，我们输入set的时候，redis会自动给我们提示</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709112032802.png" alt="image-20200709112032802"></p>
-<p>小声bb：Mysql赶紧跟人家学学！</p>
-<p>然后，在命令行输入</p>
-<blockquote>
-<p>set hello world</p>
-</blockquote>
-<p>输出OK，表示我们已经完成了key-value的添加</p>
-<p>输入</p>
-<blockquote>
-<p>get hello</p>
-</blockquote>
-<p>输出 “world”</p>
-<p>至此一个简单的测试用例就完成了。如果你觉得安装redis还需要使用虚拟机有点麻烦，并且你不想redis占用资源，那么你可以通过<a href="https://try.redis.io/" target="_blank" rel="noopener">在线Redis</a>，来学习Redis。</p>
-<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><p>Redis的配置文件是位于安装目录下的<strong>redis.conf</strong>文件，可以通过Config来查看或者配置Redis。</p>
-<p>格式为：</p>
-<blockquote>
-<p>CONFIG GET CONFIG_NAME</p>
-</blockquote>
-<p>例如我们可以输入 CONFIG GET * 来查看所有的配置</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200709125521604.png" alt="image-20200709125521604"></p>
-<p>从这里们可以看出配置文件的结构是两行为一个配置，奇数行是配置名，这个奇数行下面的偶数行是该配置项的值。</p>
-<p>也就是</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;配置名xxx&quot;</span><br><span class="line">2) &quot;xxx的值&quot;</span><br></pre></td></tr></table></figure>
-
-<p>我们会在后面的知识讲解这些配置项的含义。</p>
-<p>先使用CONFIG GET PORT查看redis日志的等级</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;notice&quot;</span><br></pre></td></tr></table></figure>
-
-<p>使用CONFIG SET CONFIG_NAME CONFIG_VALUE 的格式可以设置配置项的值，例如</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG SET loglevel warning</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
-
-<p>再查看的时候结果就变了。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CONFIG GET loglevel</span><br><span class="line">&quot;loglevel&quot;</span><br><span class="line">&quot;warning&quot;</span><br></pre></td></tr></table></figure>
-
-<p>题外话：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Warning: since Redis is pretty fast an outside user can try up to 150k passwords per second against a good box. This means that you should use a very strong password otherwise it will be very easy to break.</span><br><span class="line">因为redis速度太快，所以暴力破解密码也很快，如果你的redis地址暴露，数据安全岌岌可危。</span><br></pre></td></tr></table></figure>
-
-<h2 id="Redis的数据结构"><a href="#Redis的数据结构" class="headerlink" title="Redis的数据结构"></a>Redis的数据结构</h2><p>Redis支持五种基本的数据结构：</p>
-<p><strong>String：</strong>这是Redis中最基本的元素，它不仅仅可以存储我们日常中的字符串，它还能存储一些音乐、图片，甚至序列化之后的Java对象(你想到了什么？)，一个String最多可以存储<strong>512MB</strong>的内容。</p>
-<blockquote>
-<p>SET url “blooog.top”</p>
-<p>OK</p>
-<p>GET url</p>
-<p>“blooog.top”</p>
-</blockquote>
-<p><strong>Hash：</strong> Redis中的Hash是一系列键值对的集合，类似于Java中的Map，Hash本质上是String类型的field和String类型的value的映射表，一个Hash映射表可以存储2<sup>32</sup> -1个键值对。</p>
-<p>我们在Redis命令行敲上HMSET 出现一串提示：</p>
-<blockquote>
-<p>HMSET key field value [field value ……]</p>
-</blockquote>
-<p>根据这个结构我们输入一个Hash</p>
-<blockquote>
-<p>HMSET user:admin name zhouxx url blooog.top post redis</p>
-</blockquote>
-<p>然后使用命令</p>
-<blockquote>
-<p>HGETALL user:admin</p>
-</blockquote>
-<p>输出：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;name&quot;</span><br><span class="line">2) &quot;zhouxx&quot;</span><br><span class="line">3) &quot;url&quot;</span><br><span class="line">4) &quot;blooog.top&quot;</span><br><span class="line">5) &quot;post&quot;</span><br><span class="line">6) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
-
-<p><strong>List：</strong> 类似于数组，里面可以存储 2<sup>32</sup> -1个String类型的元素，使用LPUSH命令可以进行存储，语法也比较简单，直接把要存进去的元素写在后面就行了。</p>
-<p>例如：</p>
-<blockquote>
-<p>LPUSH exlist zhouxx blooog.top redis</p>
-</blockquote>
-<p>取出元素可以使用LRANGE命令</p>
-<blockquote>
-<p>LRANGE exlist 0 5</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
-
-<p>注意，List中的顺序和们输入的顺序是相反的，为什么会这样呢？因为我们使用的是LPUSH，也就是按照输入的顺序从List左边插入。</p>
-<p><strong>Set：</strong> 类似Java中的Set，你看着数据结构都是相通的，数据结构一定要学好，有机会开一个数据结构的博客。Set通过哈希表实现，所以它的添加、删除、查找的时间复杂的都是O(1)。</p>
-<p>使用SADD KEY ELE添加元素，例如：</p>
-<blockquote>
-<p>SADD exset zhouxx</p>
-<p>SADD exset blooog.top</p>
-<p>SADD exset redis</p>
-</blockquote>
-<p>使用SMAMERS zhouxx命令查看集合中的东西</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;zhouxx&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;redis&quot;</span><br></pre></td></tr></table></figure>
-
-<p>同样的，Set中也可以存放2<sup>32</sup> -1个String类型的元素。</p>
-<p>注意：Set中仅能存放不同的元素，第二次插入的相同元素会无效。</p>
-<p><strong>Zset：</strong> 有序集合，Zset和Set相似，都不允许插入相同的元素，不同的是Zset中每个元素都有一个Score用来代表权值，Redis通过Score来进行排序。默认为正序，并且Score可以重复。</p>
-<p>使用 ZADD KEY SCORE ELE添加元素，例如：</p>
-<blockquote>
-<p>ZADD exzset 12.12 zhouxx</p>
-<p>ZADD exzset 11.11 blooog.top</p>
-<p>ZADD exzset 6.18 redis</p>
-</blockquote>
-<p>使用ZRANGEBYSCORE KEY START END命令读取SCORE区间内的元素</p>
-<blockquote>
-<p>ZRANGEBYSCORE  exzset 6.18 12.12</p>
-</blockquote>
-<p>结果如下：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;blooog.top&quot;</span><br><span class="line">3) &quot;zhouxx&quot;</span><br></pre></td></tr></table></figure>
-
-<p>可以看出这个范围要求是双向闭区间。</p>
-<h2 id="Redis和它的二百命令"><a href="#Redis和它的二百命令" class="headerlink" title="Redis和它的二百命令"></a>Redis和它的二百命令</h2><p>回顾全文，可以看出redis中的功能还是很强大的（并没有），数据结构还是很复杂的（并没有）。</p>
-<p>命令还是很多的（这个是真的有！），据官网上说，Redis有二百多条命令。</p>
-<p>Redis官方把根据命令负责的模块，将命令分为多个命令集，有了分类再掌握命令就方便了。官网也提供了快速查询的通道。</p>
-<p>英文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
-<p>中文：<a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令查询</a></p>
-<p>中文版的翻译不是很全，但是一些经常用的命令都做了翻译。</p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>快乐的SpringMVC（一）：前后端分离下的SpringMVC</title>
     <url>/%E5%BF%AB%E4%B9%90%E7%9A%84SpringMVC%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB%E4%B8%8B%E7%9A%84SpringMVC/</url>
     <content><![CDATA[<p><strong>INTRO：</strong> SpringMVC主要负责MVC模式的实现。SpringMVC近几年来已经逐渐取代Struts2的地位，当然现在是SpringBoot大行其道，那么为什么还要学习SpringMVC呢？因为SpringBoot是Spring的封装，而SpringMVC又是Spring的组件，所以不学习SpringMVC就无法掌握SpringBoot的web部分。</p>
@@ -1036,268 +961,311 @@
       </tags>
   </entry>
   <entry>
-    <title>让人头疼的多线程：CRUD用得到多线程？</title>
-    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。</p>
+    <title>白话Spring（一）：SpringIOC到底是个啥？</title>
+    <url>/%E7%99%BD%E8%AF%9DSpring%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9ASpringIOC%E5%88%B0%E5%BA%95%E6%98%AF%E4%B8%AA%E5%95%A5%EF%BC%9F/</url>
+    <content><![CDATA[<p><strong>INTRO:</strong> 学习过Spring框架的人一定都听过Spring的IoC(控制反转) 、DI(依赖注入)这两个概念，对于初学Spring的人来说，这两个概念还是比较难懂的，所以博主就用大白话的给初学者讲一下这两个概念。</p>
 <a id="more"></a>
 
-<h2 id="嘛是多线程？"><a href="#嘛是多线程？" class="headerlink" title="嘛是多线程？"></a>嘛是多线程？</h2><p>线程：程序执行的最小单位。线程线程，一条线上的程序，我们把程序的执行当作一条线，从头到尾，中间可能有打结（循环结构），分叉（判断结构），但是并不影响我们从线头撸到线尾。</p>
-<p>上面是单线程的情况，多线程就是有很多根线，CPU走走这条线，跑跑那条线，不专注在一棵树上吊死。</p>
-<p>举一个生活中的例子，某妹子是一个专业养备胎二十年的老女神。她为了维护自己的女神形象无法让这些备胎见面，所以她只能敷衍过一个备胎之后再敷衍另一个备胎。某一天早晨，备胎A发消息说给女神买了早餐，一分钟后备胎B给女神发了早安，女神是应该先吃完A的早餐之后再回复备胎B，还是先回复备胎B的早安然后继续等A的早餐呢？</p>
-<p>答案很明显是先把B的早安回了，毕竟闲着也是闲着不是？这个例子中女神就是CPU，两个备胎就是线程，是否知道线程的作用了呢？如果这个例子是单线程的，就会出现这种情况：备胎A给女神买了早餐，女神开始等待备胎A的早餐，一分钟后备胎B给女神发了早安，女神并没有看到，因为女神呆呆望着门口等待A的早餐，更别说回复了。</p>
-<p>多线程的意义就在于此，把CPU等待IO的时间充分利用起来，CPU等待IO的时候，就给它安排计算，无情压榨。</p>
-<p>既然多线程这么香，为什么不到处都用多线程呢，两个表达式就开一个线程岂不是速度飞起？</p>
-<p>多线程还是有缺点的：</p>
-<ol>
-<li>线程的切换需要消耗系统资源。</li>
-<li>线程的创建需要消耗大量系统资源。</li>
-<li>线程之间的安全问题比较复杂。</li>
-<li>多线程有可能发生死锁。</li>
-<li>线程会占用额外的内存空间。</li>
-</ol>
-<p>这些缺点有些是可以避免的，能否避免、怎样避免就是我们为什么要学习多线程技术，也是多线程技术复杂的原因，因为它必须解决这么多的多线程缺陷。</p>
-<h2 id="CRUD用得到多线程？"><a href="#CRUD用得到多线程？" class="headerlink" title="CRUD用得到多线程？"></a>CRUD用得到多线程？</h2><p>有同学要问了，我开发的项目都是用的Spring，无非就是增删改查，哪里用得到多线程嘛。</p>
-<p>我们来看一段代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserInfo <span class="title">getUserInfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户id查询用户信息</span></span><br><span class="line">        <span class="keyword">return</span> userInfo;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderInfo <span class="title">getOrderinfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户Id查询该用户的订单信息</span></span><br><span class="line">        <span class="keyword">return</span> orderInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>开门见山，我们先来一个没有IOC的程序例子：</p>
+<p>Dao层代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoImpl</span> <span class="keyword">implements</span> <span class="title">UserDao</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">selectUserFrominfo</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">    	<span class="comment">//操作数据库代码</span></span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>假设我们有一个界面需要调用这两个Service层方法，也就是某一Controller调用了这两个方法，并且将查询到的用户信息和订单信息打包成一个JSON字符串，而服务器架构是这样的：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717123728495.png" alt="image-20200717123728495"></p>
-<p>静态服务器做负载均衡，接收用户请求，动态服务器（Tomcat）集群用处理请求进行运算，数据库服务器存储数据。</p>
-<p>如果不使用多线程，那么两个方法顺序执行，是这样的步骤：</p>
-<ol>
-<li>静态服务器接收到用户请求</li>
-<li>静态服务器转发请求给动态服务器</li>
-<li>动态服务器处理请求，先调用getUserInfo()方法向数据库服务器查询数据</li>
-<li>数据返回到动态服务器，动态服务器调用getOrderInfo()方法向数据库服务器查询数据</li>
-<li>数据解析成JSON字符串数据给静态服务器</li>
-</ol>
-<p>观察第4-5步，动态服务器调用getUserInfo方法之后需要向数据库服务请求数据，此时CPU进入闲置状态，因为CPU在等待数据库服务器返回数据，假设动态服务器到数据库服务器需要0.5s，那么这0.5s中大概有0.45s都是在浪费CPU。</p>
-<p>使用多线程就不一样了，动态服务器向数据库服务器查询UserInfo数据的要求之后，该线程继续等待数据的返回，而是另一线程则紧接着发送查询OrderInfo数据的请求，并且自己等待数据的返回。（没错，这个叫做异步）</p>
-<p>悄咪咪地说一句，Spring针对这种异步情况提供了一个注解——@Async，有时间讲一讲。</p>
-<h2 id="创建多线程"><a href="#创建多线程" class="headerlink" title="创建多线程"></a>创建多线程</h2><p>学习多线程的第一步当然是创建几个多线程玩玩啦！</p>
-<p>创建多线程有两种方式：</p>
-<p>继承Thread并且重写run方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread0().start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Service层代码:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    UserDao userDao;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserService</span><span class="params">(UserDao userDao)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.UserDao = userDao;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userDao.selectUserFrominfo(user);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>实现Runnable接口重写run方法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Thread0()).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Controller层代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span></span>&#123;</span><br><span class="line">    UserServiceimpl userService;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserController</span><span class="params">(UserService userService)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.userService = UserService;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> ModelAndView <span class="title">login</span><span class="params">(User user)</span></span>&#123;</span><br><span class="line">        userService.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>最终还是要把Runnable类传递到Thread中，Runnable也就图一乐，真要用线程还是Thread。既然如此为什么要使用Runnable呢？因为Java不支持多继承，一个类只能有一个爹，而且实现Runnable接口更能体现面向接口编程的开发理念。</p>
-<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>通过Thread的源码我们可以得知Java线程一共有六种状态：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> State &#123;</span><br><span class="line">    NEW,</span><br><span class="line">    RUNNABLE,</span><br><span class="line">    BLOCKED,</span><br><span class="line">    WAITING,</span><br><span class="line">    TIMED_WAITING,</span><br><span class="line">    TERMINATED;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">State</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>main方法</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    UserController userController;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(Stringp[] args)</span></span>&#123;</span><br><span class="line">        UserDAO dao = <span class="keyword">new</span> UserDAO();</span><br><span class="line">        UserService service = <span class="keyword">new</span> UserService(dao);</span><br><span class="line">        UserController controller = <span class="keyword">new</span> UserController(service);</span><br><span class="line">        controller.login(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>NEW：新建状态，线程对象刚创建，还没有调用start()方法跑起来。这里提一句，run方法和start方法一定要分清楚，run方法是你告诉计算机打算开启一个新线程运行run方法中的代码，start方法才是开始新线程。</p>
-<p>RUNNABLE：就绪状态，表示线程随时都可以运行，这个状态可能发生在刚调用线程的start方法、sleep方法时间到了，从wait状态被唤醒、CPU正常切换到另一个线程。</p>
-<p>BLOCKED：阻塞状态，表示线程暂时不能运行，处于等待锁的状态，例如运行到synchronized关键字。</p>
-<p>WAITING：等待状态，表示线程当前正在等待另一线程唤醒，通常使用wait()，join()等进入。</p>
-<p>TIMED_WAITING：带时间的等待状态，例如sleep方法，时间到了就自然进入RUNNABLE状态。</p>
-<p>TERMINATED：销毁状态，线程逻辑也就是run()方法执行完毕，不需要再调度该线程。</p>
-<p>用一个图可以表示这六种状态的相互转换：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717141332216.png" alt="image-20200717141332216"></p>
-<p>可以把这几种状态比作皇帝后宫妃子的状态。</p>
-<p>NEW：选进宫中，进行培训（哪有刚来就被皇上宠幸的）。</p>
-<p>RUNNABLE：随时可以被翻牌子，等待皇上宠幸。</p>
-<p>BLOCKED：被得宠的妃子欺压，打进冷宫，等到得宠的妃子释怀（释放锁）才能继续被皇上宠幸。</p>
-<p>WAITING：不孕不育，除非别的妃子或者来了神医，否则皇上再也不宠幸你了。</p>
-<p>TIMED_WAITING：来大姨妈，时间到了恢复可以被皇上宠幸的状态。</p>
-<p>TERMINATED：完成妃子的终极目标，怀孕了……不用伺候皇上了。</p>
-<p>有一说一，感觉全网没有比这个更加形象的比喻了……但是BLOCKED的比喻不是很符合，凑合看吧。</p>
-<h2 id="线程相关的方法"><a href="#线程相关的方法" class="headerlink" title="线程相关的方法"></a>线程相关的方法</h2><p>讲过了线程状态的切换，下面就需要讲一讲线程之间切换状态所使用的方法了。线程相关的方法按照调用方式可以分为三种，对象方法，该方法属于对象，由对象调用；静态方法，该方法属于Thread类，调用该方法会作用于调用者；Object继承的方法，该方法继承自Object类。</p>
-<h3 id="对象方法"><a href="#对象方法" class="headerlink" title="对象方法"></a>对象方法</h3><p><strong>start()：</strong>这个方法使线程从NEW状态变为RUNNABLE状态</p>
-<p><strong>getState()：</strong>获取线程当前的状态</p>
-<p><strong>interrupt()：</strong>中断当前线程</p>
-<p><strong>join()：</strong>等待指定线程完事才能继续运行，如果使用有参的join()方法的话，就是等指定线程完事或者经过指定毫秒。被插队的线程进入WAITING状态。</p>
-<p>上面是Thread对象的常用方法（其他getter和setter方法就不列出来了）。</p>
-<p>简单说一下interrupt()方法吧。</p>
-<p><strong>中断：</strong>用一把剪刀把线程剪短，不让线程继续进行下去。然而Java中的中断机制并没有剪刀剪线头那么利落。Java中调用interrupt()方法是给线程一个中断标记，具体怎样处理还是要看线程自己，线程觉得自己工作很重要，就不理会中断标志位，而是继续执行下面的语句。</p>
-<p>还有两个名字很像的方法难以区分，interrupted和isInterrupted。interrupted()是个静态方法，返回当前线程的中断状态（不管你是调用哪个线程对象的interrupted()方法，这条语句哪个线程执行就是哪个线程的中断状态），并且清除线程的中断标记。isInterrupted()不是静态方法，返回线程对象的中断状态，不会清除中断标记。</p>
-<p>说到中断，曾经有一个stop()方法可以强制结束线程的生命，后来被弃用了。调用线程对象的stop方法会立刻释放该线程对象的锁和线程资源。例如一个程序在转账过程中被中断，转出成功但是还没转入目标账户，用户钱凭空消失！你永远也不知道调用一个线程的stop()方法时这个线程在干什么。所以现在中断方式由命令中断，改为请求中断，由线程自己决定要不要中断。</p>
-<h3 id="静态方法"><a href="#静态方法" class="headerlink" title="静态方法"></a>静态方法</h3><p><strong>sleep()：</strong>调用该方法的线程会进入TIMED_WAITING状态，等待事件结束之后，自动恢复RUNNABLE状态。</p>
-<p><strong>yield()：</strong>放弃当前的CPU使用权，也就是皇上翻了某妃子的牌子，妃子说皇上您再重新选一次，皇上有可能再次翻该妃子的牌子，也有可能翻其他妃子的牌子。</p>
-<p><strong>interrupted()：</strong> 这个讲过了，请看上面中断部分。</p>
-<p><strong>currentThread()：</strong>获取当前线程的线程对象。例如我们实现Runnable接口的时候，此时当前线程对象是Runnable类型，无法使用上一章节的非静态方法，此时可以调用currentThread()方法获取Thread对象，然后通过对象来调用非静态方法。</p>
-<p><strong>activeCount()：</strong>返回当前线程组存活的线程。</p>
-<h3 id="Object的遗产方法"><a href="#Object的遗产方法" class="headerlink" title="Object的遗产方法"></a>Object的遗产方法</h3><p><strong>wait()：</strong>这个方法是从Object继承过来的，它会让线程释放锁，并且进入WAITING状态。看起来和sleep很相似，后面会详细讲解wait和sleep的区别。</p>
-<p><strong>notify()/notifyAll()：</strong> 这两个方法也是从Object继承过来的，notify方法会唤醒处于wait的线程。</p>
-<p>注意：wait()和notify()都必须放在同步代码块或者同步方法中。</p>
-<h3 id="wait-方法和sleep-方法的区别"><a href="#wait-方法和sleep-方法的区别" class="headerlink" title="wait()方法和sleep()方法的区别"></a>wait()方法和sleep()方法的区别</h3><p>上面我们了解到wait方法和sleep方法都会让线程进入WAITING/TIMED_WAITING状态，两者有以下区别：</p>
+
+
+<p>可能有的同学要问，这不是挺好的吗？new一下可以实例化，也没浪费多大功夫嘛。</p>
+<p>在此回答此问题之前，我们需要了解一个软件工程上的知识点：</p>
+<p><strong>耦合度：</strong> 程序之间的依赖关系。我们可以通俗的讲依赖关系就是没有你，我办不成事。人越独立越好，模块也不例外，但是人又不可能完全独立于社会，就像模块不可能完全脱离系统，而消除这种依赖关系的过程就是解耦。</p>
+<p>再来看上面的代码，有哪些弊端呢？</p>
 <ol>
-<li>血统不同：wait方法继承自Object，而sleep是Thread类的一个静态方法。</li>
-<li>对待锁的方式不同：sleep不会释放锁，只是把CPU让出来。wait不仅会让出CPU，还会释放锁。</li>
-<li>运行环境不同：sleep在哪都可以运行，wait只能运行于同步代码块/同步方法中</li>
+<li>创建繁琐，每一层我们都需要创建下一层的对象，这个我们能忍，毕竟我们是勤劳勇敢的中国人民，麻烦点不算什么，下面的就不好搞了。</li>
+<li>违反面向接口编程的原则，每一层都直接new一个对象，后期更换接口需要工作量爆表。</li>
+<li>在这一串调用链中，上层知道下层是如何创建的，上层还需要自己动手创建下层。就好比没有人力资源管理的公司，任何人事的调动都需要该职员的上司进行处理，上下层的耦合性飙升。</li>
+<li>开发人员不能专心编写业务逻辑，编写业务逻辑代码时还需要自己连接数据库+自己创建Dao+记住数据库密码。</li>
 </ol>
-<h2 id="线程的属性"><a href="#线程的属性" class="headerlink" title="线程的属性"></a>线程的属性</h2><p><strong>线程优先级：</strong>在Java中，每个线程都有自己的优先级，并且子类可以继承父类的优先级。可以通过getter和setter方法获取或者设置线程的优先级。Java将线程的优先级分为10个等级，并且提供了三个常量：MIN_PRIORITY=1;MAX_PRIORITY=10;NORM_PRIORITY=5。</p>
-<p>线程调度器准备执行新线程时，会优先选择较高优先级的线程，但是线程优先级依赖于系统。不同的平台可能对线程的优先级处理不同，例如Windows中线程的优先级分为七个等级，而Oracle为Linux提供的JVM没有线程优先级这个概念，所有线程优先级是平等的。</p>
-<p>所以不要过度依赖线程优先级，程序的正确性如果依赖于线程优先级，那么不同的平台可能会出现不同结果。</p>
-<p>另外，低优先级的线程可能一直无法执行，导致低优先级的线程饿死。</p>
-<p><strong>守护线程：</strong> Java中设置了一个标志位——Daemon，这个标志位表示该线程是否是一个守护线程。先来介绍一下守护线程，守护线程唯一的作用就是给其他线程提供服务，例如提供计时功能。</p>
-<p>值得讨论的是守护线程的生命周期，守护线程不是妃子，守护线程是妃子的丫鬟，当所有的妃子都嗝屁了之后，守护线程也会随之嗝屁，因为守护线程没有提供服务的对象了，也就没有存在的必要了。</p>
-<p>这里提醒大家：千万不要让守护线程访问数据库，就像之前说的stop方法一样，你永远不知道守护线程什么时候嗝屁了。</p>
-<p><strong>线程组：</strong> 为了方便管理线程，Java推出了线程组这一概念。Thread的构造方法提供了线程组的参数，传入所在线程组的对象。假设A线程创建了B线程，并且B线程的构造方法没有设置线程组对象，那么默认B线程和A线程同属于一个线程组。</p>
-<p>然而，大家在程序中尽量避免使用线程组。因为Java引入了更好的线程管理集合。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<p>如果使用IOC呢？彻底推翻上述的所有弊端，唯一的缺点就是增加那么一丢丢的学习成本，以及添加那么”亿”丢丢的配置文件。当然这两个缺点第一个是值得的，第二个则被SpringBoot给摆平了。</p>
+<p>简单了解IOC有什么用之后，我们再来看IOC到底什么意思。</p>
+<p><strong>IOC——控制反转：</strong>有反就有正，所谓的正就是我们在程序中new一个对象出来，我们就开始控制这个对象的生命周期，反转之后呢？<del>这个对象开始控制我们的生命周期</del>（删）我们将对象生命控制权交给Spring，由Spring给我们new对象出来。Spring在这个过程中扮演的就是一个人力资源管理部门的角色，作为大老板的我们应该将精力放到业务逻辑上。 而这些被管理的职员，我们通常称之为Bean。Bean又是什么呢？为什么名字这么奇怪？</p>
+<p>Bean这个词并非起源于Spring，只是最近二十年开发者大多都是从Spring中接触到Bean这一名词，Bean的起源年代久远，当初Java还抱着幻想反攻桌面端，但是被微软的VB打的满地找牙。当时微软大推模块化，在IDE中通过拖拽就可以给界面添加各种组件。Java开源社区急了，这种好东西我们也要有，于是大家商量着整出一套规范——JavaBean。通过这个规范就可以让IDE根据反射快速的构建界面，然而没人买账……现在回答Java Bean是什么？Java Bean是一种规范，而Bean就是遵从这个规范的类。你要是问为什么叫Bean而不叫其他什么，那就只能说Java Bean合在一起叫做咖啡豆，起这个名字的人觉得好玩。</p>
+<p><strong>Java Bean规范了什么？</strong> 上面说了JavaBean是一种规范，那么规范了什么呢？主要规范了以下四点：</p>
 <ol>
-<li>什么是多线程</li>
-<li>多线程关Spring CRUD什么事</li>
-<li>线程的状态和转化</li>
-<li>线程相关的方法</li>
-<li>wait和sleep方法的区别</li>
-<li>线程的属性</li>
-<li>线程优先级好不好使？</li>
-<li>守护线程是个啥？</li>
+<li><p>所有属性使用private</p>
+</li>
+<li><p>给private标记的属性添加getter/setter方法</p>
+</li>
+<li><p>实现序列化</p>
+</li>
+<li><p>具有默认的构造函数（无参的构造函数） </p>
+</li>
 </ol>
-<p>多线程的知识还是有点多的，尽管都是很基础的东西，但是以自己的水平写出来还是比较吃力的。这篇博客写了两天，还是有很多知识没有提及，比如多线程中的异常处理机制。有时间的话再另写一篇博客补充上去吧。</p>
+<p>控制反转和我们平常使用的Maven很像，没有Maven的时候，我们需要将所需的依赖包一个个下载好，放到lib文件夹中。有了Maven之后，我们只需要在配置文件中配置上该App所需的所有依赖包，是不是很方便？假如我们需要更换依赖版本，只需要在pom.xml文件中修改版本号，Maven就会自动给我们导入依赖包。相对应的，我们需要更改某一接口的实现类的时候只需要修改注释/配置文件就可以了。</p>
+<p>那么怎么告诉Spring这些依赖关系呢？我们可以通过注释或者xml配置文件的方式。</p>
+<p><strong>注解方式的IOC：</strong>IOC相关的注解很多，但是总体可以分为两类组件注册和组件加载。</p>
+<p>组件注册注解是由@Component注解及其一堆小弟组成的，像业务层的@Service、控制层的@Controller、数据操作层的@Repository。这些小弟可以被@Component代替，但是还是推荐层次更明确的小弟注解。这些注解的作用是告诉Spring哪些类需要你控制，Spring把这些类变成Bean实例，这些实例的名字使用变量类似的驼峰命名法，也就是将类的首字母变为小写，其他不变。注册Bean的过程也就是告诉人力资源部门哪些人是我们公司的职员。当然Spring不知道从哪里找这些组件，你需要在配置文件中配置Spring扫描哪些包。</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- </span></span><br><span class="line"><span class="comment">	首先通过context命名空间引入component-scan配置</span></span><br><span class="line"><span class="comment">	component： 组件</span></span><br><span class="line"><span class="comment">	scan： 扫描</span></span><br><span class="line"><span class="comment">--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"org.exmples.*"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样Spring道了哪些包中的组件需要自己管理，又知道这些包中的类需要注册为什么类型。但是这些组件注册之后安排到什么岗位呢？那么就要用到组件加载相关的注解了。</p>
+<p>组件加载常用的有@Autowired，@Resource、@Qualifier。@Autowired是Spring中主要使用的注解，它可以通过成员变量/成员变量的setter方法/构造函数将依赖注入。这三个注解有什么区别呢？@Autowired和@Qualifier是Spring中自带的，而@Resource则是在javax.annotation包中。另外@Resource默认是通过名称加载，如果名字找不到，那么就通过类型注入。@Autowired则仅支持通过类型加载的，@Autowired可以和@Qualifier结合使用，可以通过类型和名称双限定加载。至于@Qualifier注解，它一般不单独使用。</p>
+<p>我们常用的方式就是@Autowired注解，所以@Resource注解的方式不再演示了。</p>
+<p>示例如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span>(<span class="string">"dependency"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="comment">//balabala</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">calss Exmple&#123;</span><br><span class="line">    <span class="comment">//通过成员变量注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@Qualifier</span>(<span class="string">"dependency"</span>)</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过构造方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Exmple</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//通过setter方法注入</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">      	<span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上三种注入方法，选择其一即可。这里提一句，不推荐使用成员变量直接注解的方式，而setter和构造方法各有优缺。下面聊聊这三种方式：</p>
+<p><strong>字段注入：</strong>又叫属性注入、field注入等等，这种方式代码简洁，编写方便，但是有很多缺点，缺点如下：</p>
+<ol>
+<li><p>在声明为 final 的字段上不可用，因为final修饰的关键字需要在类实例化的时候进行初始化，这种字段只能使用构造器注入。</p>
+</li>
+<li><p>与SpringIOC组件耦合，这种方式需要Spring通过反射将属性注入，除此之外没有任何办法（不嫌麻烦你可以使用反射，因为Spring也是这么干的）给这个属性赋值，在你进行单元测试的时候你还要呼叫Spring过来帮你初始化这个依赖，多麻烦呀。就好像你想找小a倒杯水，明明小a就在你隔壁，却还要让人力资源部门通知小a倒水。</p>
+</li>
+<li><p>隐藏依赖关系，字段注入的方式很简单，一个注解就搞定了。但是简单到让人忘记你到底有多少个依赖，让接手的人不知道哪个才是你的依赖。比如你在公司看到一个不干活的职员，你找人力资源部门说 “这小子哪个部门的？给我开了他！” 结果人力资源部门跟你说，这哥们送外卖的。 </p>
+</li>
+</ol>
+<p><strong>setter方法注入：</strong>这种方式有利有弊，我在小项目开发中一般使用这种方式，因为可以把setter方法藏到最后，代码看起来没那么臃肿。setter唯一的不足就是不能给final依赖注入，但是解决了字段注入的两个缺陷：</p>
+<ol>
+<li>解除SpringIOC组件的强耦合关系，依赖不仅可以使用Spring注入，也可以通过调用setter方法的方式注入依赖。 </li>
+<li>显示依赖关系，通过setter方法上的注释，我们可以知道这个类的依赖关系有哪些，哪些依赖关系需要Spring帮助我i们注入。</li>
+</ol>
+<p><strong>构造方法注入：</strong>这种注入依赖的方式是Spring官方指定推荐，也就是皇太子（虽然setter注入方式在Spring 3.x 中也是被推荐的那一位）。这种方式几乎没有任何缺点，唯一的缺点就是当你的依赖关系很多的时候，你的构造方法看起来不太美观。碰到这种情况，你就要考虑自己程序设计的是不是有问题了，是不是违背了单一职责原则（如果有机会就把设计原则讲一下，下次一定）呢？细数起来构造方法注入的方式优点如下：</p>
+<ol>
+<li>允许final关键字修饰的依赖注入，这个没得说，只有这位皇太子有这本事。</li>
+<li>依赖检查，重写了有参的构造函数，想实例化这个类就只能通过有参的构造函数完成初始化，万一有个依赖注入失败，那这个类就无法初始化。就好比开会的时候，Spring会告诉你某某某开会没来，这个会开不成，而不是像字段注入和setter方法注入中，让某某某干活了，某某某说我没开会（注入依赖） ，我空指针了。</li>
+</ol>
+<p>那么构造器注入的方式相较setter方法注入有什么不足呢？setter方法允许类构建之后重新注入。</p>
+<p><strong>总结来说：</strong> setter和构造方法各有优劣，每个都有自己不可替代的功能，相较于两位皇子来说，字段注入是不受宠的那个。在实际开发中还是推荐使用构造方法注入的方式。</p>
+<p><strong>XML配置文件的注入方式</strong> 讲完注解的方式注入依赖，来看一看开发环境中不是很常用的xml配置文件注入的的方式。XML有两种注入方式，构造器注入和setter方法注入，这两者的优劣类似于注解中两种方式的优劣。</p>
+<p>首先来看构造器注入的配置，写在applicationContext.xml中：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>依赖类Dependency：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Denpendency</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类Test：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Test</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>示例中展示了Spring如何创建一个dependency示例并将该实例注入Test中，首先是&lt;bean&gt;标签的讲解，bean标签常用的两个属性id和class，id指定了这个bean在Spring中唯一的标识符，其他bean可以通过id引用该bean，其实相当于java中的标识符（名字！够清楚了吧）。class则指定了这个bean对应的类，也就是告诉Spring哪个类需要注册为id=xxx的bean。这个bean又有哪些属性或者依赖呢？通过&lt;constructor-arg&gt;标签中的两个常用属性value和ref，其中value是没有在Spring中注册的属性（什么是注册请看前面两句刚写的&lt;bean&gt;标签讲解），例如数据库密码、数据库驱动url等等。ref则表示在Spring中注册过的依赖，引用该依赖的方式是ref=“id”。</p>
+<p>还是人力资源管理部门的例子，value是公司外的资源，例如隔壁老王送水电话，村头小张仓库地址，这些资源不属于公司内部，没有被人力资源管理部门所管理，但是又被某职工所需要，那么在职工入职（注册为Bean）的时候将这些信息传给这个职工。ref又是个怎么回事呢？ref是公司给你安排的小弟，类似于Controller层，作为高层怎么能没有小弟呢？在空降领导的时候总得带着领导见见小弟吧？ref就是这么回事，你告诉Spring这个领导需要哪些小弟，Spring带着这些小弟<del>注入</del>接见领导，当然这些小弟都需要在Spring中注册过了，不然你还是要用value的方式注入依赖。</p>
+<p>看完了XML配置+构造器方法注入之后，再来看XML+setter方法的注入方式。</p>
+<p>同样是applicationContext中：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"dependency"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Dependency"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">value</span>=<span class="string">"argValue"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"test"</span> <span class="attr">class</span>=<span class="string">"org.exmple.Test"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">properties</span> <span class="attr">ref</span>=<span class="string">"dependency"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>依赖类Dependency：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dependency</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String data;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDate</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类Test：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Dependency dependency;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDependency</span><span class="params">(Dependency dependency)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.dependency = dependency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>值得注意的是，与注解的方式不同，在类中必须有setter方法，否则Spring会报错。至于value和ref什么意思，刚讲过就忘啦？？？？</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="# 写在最后"></a># 写在最后</h2><p>到这里，算是用最直白的话把我理解的Spring IOC和使用方式写出来了，因为本人水平限制，这篇文章一定还有纰漏，希望看官能够指点一下。</p>
+<p>因为都是用大白话讲解的，所以涉及的知识难免比较浅薄，目的只是为了帮助初学Spring的同学尽快的了解Spring，具体的深入还是需要大家多多实践。</p>
 ]]></content>
       <categories>
-        <category>多线程</category>
+        <category>Spring</category>
       </categories>
       <tags>
-        <tag>多线程</tag>
-        <tag>并发</tag>
+        <tag>Spring</tag>
+        <tag>IOC</tag>
       </tags>
   </entry>
   <entry>
-    <title>让人头疼的多线程：synchronized暴打线程安全</title>
-    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9Asynchronized%E6%9A%B4%E6%89%93%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>线程安全是什么？我就头铁不加锁。性能是什么？我每个方法都来一个synchronized。这篇博客synchronized原理入手，教你怎样合理利用synchronized写出性能和安全兼顾的代码。</p>
+    <title>MySQL冲冲冲：MySQL索引的从认识到实战</title>
+    <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>MySQL是我们常用的关系型数据库，小巧灵活。在开发过程中，当我们的数据量超过一定程度的时候，就需要我们使用索引来优化查询和排序的速度，这篇文章就来尽量全面的讲一讲索引。</p>
 <a id="more"></a>
 
-<h2 id="JVM的内存模型——JMM"><a href="#JVM的内存模型——JMM" class="headerlink" title="JVM的内存模型——JMM"></a>JVM的内存模型——JMM</h2><p>说到线程安全，就不得不讲讲Java中JVM的内存模型JMM（Java Momory Model）。</p>
-<p>JMM定义了Java在内存中运行的模式，简单来说就是Java在运行时的数据在内存中以怎样的形式存放。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200720101831305.png" alt="image-20200720101831305"></p>
-<p>上面这张图来来自《深入理解Java虚拟机》，上面的区域可以分为两类，线程共享的区域和线程隔离的区域。线程隔离的区域是线程私有的，其他线程不能访问该区域中的数据，自然也就不存在线程安全的问题。</p>
-<p>这里简单对这些内存区域做个介绍：</p>
-<p><strong>方法区：</strong> 方法区和堆内存一样，是线程共享的区域，它用来存储类信息、静态变量、常量（常量也是静态变量呀）等数据。（有没有发现都是类相关的？）</p>
-<p><strong>堆内存：</strong>一般来说，堆内存是JVM中最大的一块内存。这一大块内存只用来存放对象，几乎所有的对象都会被分配在堆内存中，记住这个几乎，并不是所有的对象都会分配在堆内存中，根据逃逸分析等优化技术会让对象分配在栈内存或者进行标量替换（只要机制不是所有的对象都分配在堆内存就行了，逃逸分析和标量替换有机会再讲）。</p>
-<p>堆内存被所有线程所共享，存储数据重要+线程共享就导致了堆内存的线程安全问题是我们重点关注的内容。</p>
-<p><strong>虚拟机栈：</strong>通常我们称之为栈内存，栈内存描述的是Java方法的内存模型，一个方法运行时就会创建一个栈帧，栈帧中存放方法的各种信息，例如局部变量表、程序出口。相信大家都知道栈这个数据结构，方法执行的时候会入栈，方法执行完毕会出栈。（想一想main线程中栈内存的栈底是不是永远是main方法？其他线程中栈内存的栈底是不是永远是run方法？）</p>
-<p> <strong>程序计数器：</strong> 这块区域比较小，它用来作为当前代码所运行的行号指示。字节码解释器通过改变程序计数器的值来选择下一条运行哪条指令，判断、循环、异常处理等等。比如线程进行切换的时候需要保存原线程的程序运行到哪一条指令，所以每个线程都有一个程序计数器来记录运行的行号。</p>
-<p><strong>本地方法栈：</strong> 这个区域和虚拟机栈一样，只不过本地方法栈服务于Native方法（非Java方法，通常是C/C++）。</p>
-<p>这里给一些代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;<span class="comment">//存储在Test的对象中</span></span><br><span class="line">    Object object = <span class="keyword">new</span> Object();<span class="comment">//对象存放在堆内存，地址存放在Test的对象中。</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> ONE = <span class="number">1</span>;<span class="comment">//存放在常量池中，常量池属于方法区</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(Object obj)</span></span>&#123;</span><br><span class="line">        <span class="comment">//obj存放在堆内存中，传进来的是obj地址的副本，这个地址存放在栈内存中</span></span><br><span class="line">        <span class="keyword">this</span>.object = obj;</span><br><span class="line">        Object obj2 = <span class="keyword">new</span> Object();<span class="comment">//在方法中创建的对象存储在堆内存中（不一定），地址存放在方法栈中</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这里提一句，在学习编程的时候都听说过两个概念，值传递和引用传递。也许有同学听说过这么一句话，Java中只有值传递，没有引用传递。Java方法的参数为对象时，传进来的是Java对象地址的副本。可能说起来有点难懂，我们看一下代码就明白了。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    Object object = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        obj = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Test t = <span class="keyword">new</span> Test();</span><br><span class="line">        t.test(t.object);</span><br><span class="line">        System.out.println(t.object == <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>思考一下，如果Java中的方法是引用传递，也就是t.object的地址传递进test方法，然后被设置为空值，那么this.object是否就为空了？也就是程序运行结果为true。然而正确的运行结果是true，也就是说，Java传递过去的是一个地址的副本，这个副本相当于Java对象的代言人，你可以通过这个代言人对对象进行操作，但是你把代言人杀了，和原来的对象无关。</p>
-<p>不好意思……扯远了，我们说回来。</p>
-<p>上回书说到Java的内存模型，理解了Java的内存模型才能明白什么样的线程是安全的，什么样的线程是不安全的。</p>
-<h2 id="线程安全问题"><a href="#线程安全问题" class="headerlink" title="线程安全问题"></a>线程安全问题</h2><p>我们先来写一段代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    t.i--;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>代码逻辑很简单，开启三个线程对类变量i进行减操作，按照我们的想法应该是99-0，没有重复和缺失完整输出。</p>
-<p>然而会出现这种现象：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717105635486.png" alt="image-20200717105635486"></p>
-<p>98出现了两次，并且没有99出现？在我们看来线程中仅仅两条语句，然而对于CPU来说，这两条语句分为四步：</p>
+<h2 id="索引简介"><a href="#索引简介" class="headerlink" title="索引简介"></a>索引简介</h2><p> MySQL官方给索引一个定义——帮助MySQL高效获取数据的数据结构。注意，这里得到了一个关键字，索引是一种数据结构，一种帮助我们更快速获取数据的数据结构。</p>
+<p>我们初学MySQL时并没有使用索引，查找数据需要全表扫描，也就是从第一行开始扫描，直到最后一行。如果我们表里数据非常大，上千万行的数据，全表扫面会特别慢，这个时候如果有一个“目录”来帮助我们快速定位数据就好了。</p>
+<p>这个时候就出现了索引，我们可以把索引对比成新华字典的目录，目录是不是一种独特的数据结构呢？目录由拼音+页数组成，通过对应拼音的页数我们可以快速找到想要的数据。如果没有目录，我们需要从a开始，一个字一个字的对比（MySQL这本字典可不是按规律排的），直到找到我们想查的字，如果想查a还好，想查zhouxx可咋整。</p>
+<p>通过这些描述我们知道了，WHERE条件后面需要查找的关键字可以使用索引。还有什么可以使用索引优化呢？索引还有一个别名：排好序的快速查找数据结构。所以我们在ORDER BY中也可以使用索引来优化结果。</p>
+<h2 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h2><p>上面讲过了索引是一种数据结构，所以索引是什么样的数据结构呢？     </p>
+<p>先说结果：索引是一种排序树，这里有同学就开始疑惑了，排序树是个嘛玩意？</p>
+<h3 id="排序树是啥？"><a href="#排序树是啥？" class="headerlink" title="排序树是啥？"></a>排序树是啥？</h3><p>排序树又称搜索树、查找树。看名字就知道这个和索引高度相似，索引是干嘛的？一种排好序的快速查找数据结构。这两个东西就对应起来了，那么我们只要学好了这个什么排序树就能更加接近MySQL索引的底层原理了。</p>
+<p>讲排序树之前需要大家知道一些储备知识：树的数据结构特点、二叉树的相关知识。</p>
+<p>排序树的叉不确定，本文就按照最简单的二叉排序树来讲，核心知识都是相同的，多叉排序树大家自己类比就好。</p>
+<p>先说二叉排序树的定义：</p>
 <ol>
-<li>读取i的值到线程私有内存中</li>
-<li>对私有内存中的i值进行修改</li>
-<li>将i值写入到私有内存中</li>
-<li>再次读取i值，并且打印到控制台</li>
+<li>若左子树不为空，则左子树所有结点的值均小于该结点的值</li>
+<li>若右子树不为空，则右子树所有结点的值均小于该结点的值</li>
+<li>任意结点的左右子树也是二叉排序树</li>
+<li>没有键值相等的结点</li>
 </ol>
-<p>那么一定是出现了某种操作，让数字99还未被第四步读取打印的时候就被改写了。例如线程0先读取i值并且进行操作写入，还未进行读取的时候，线程1再次读取i=99值，并且操作写入i=98。随后线程0再次读取i值，读到的是98。</p>
-<p>我们再来看一段代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>与上面的代码没有什么太大变化，只是加了一个很复杂的关键字synchronized，这里先简单说一下它的作用：保护代码块中的代码只会被一个线程执行。</p>
-<p>思考下上面的代码会出现什么结果，能修复之前遇到的问题吗？</p>
-<p>来看一下运行结果：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717111502567.png" alt="image-20200717111502567"></p>
-<p>之前的98重复倒是解决了，可是又出现了一个新的问题——负值。（如果没出现就多运行几次，甚至可能会出现-2）</p>
-<p>还是上面的步骤，很明显上面的原因全是synchronized的锅，下面讲一下这个synchronized究竟是什么。</p>
-<h2 id="synchronized关键字"><a href="#synchronized关键字" class="headerlink" title="synchronized关键字"></a>synchronized关键字</h2><p>synchronized是解决线程安全问题最简单的方法，这个关键字可以保证在方法/代码块运行的时候只有一个线程访问。</p>
-<p>synchronized有两种用法：</p>
+<p>是不是读起来很绕口？</p>
+<p>我们来看一个例子：</p>
+<p>有一串数字——8 6 5 4 7 2 3 1 9，我们怎么生成一个二叉搜索树呢？</p>
+<p>首先取出数字8作为根结点，随后下一个数字为6，比8小，所以我们把6作为8的左结点</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105612632.png" alt="image-20200725105612632"></p>
+<p>再取出一个数字5，比8小，可是8已经有左子结点了，再对比8的左子结点6，比6小，所以我们把数字5放在6的左子结点。同理数字4也是一样，现在树变成了这样：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105533427.png" alt="image-20200725105533427"></p>
+<p>这时来了一个不素之客7，比8小，又比6大，那么我们就把它放到6的右子结点：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105514803.png" alt="image-20200725105514803"></p>
+<p>按照这种从根结点逐步向下扩展，并且遵循小的放左边、大的放右边这个规律，最终生成的树就是二叉搜索树。</p>
+<p>例子中最终生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105359707.png" alt="image-20200725105359707"></p>
+<p>好吧，例子举得不好，这个树太丑了……数字是我随便敲的，长成这样我也没办法……</p>
+<p>那重新来一个例子吧，例子二：</p>
+<p>5 6 3 4 7 1 9 2 8</p>
+<p>生成树为：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725110331135.png" alt="image-20200725110331135"></p>
+<p>这个树就好看多了……</p>
+<p>那么这个树有什么作用呢？或者说为什么叫做查找树呢？</p>
+<p>我们使用第二个例子，假设需要查找数字2，从根结点查找开始，比5小，那么我们右边的树（因为排序树右边的都比根结点大）就不看了，只看左边的子树。查找到3，比3小，右边不看。查找到1，比1大，左边不看（虽然左边没结点了），只看右边，查找到2，完成查找。</p>
+<p>一共查找了4次，如果不使用二叉查找树呢？我们需要查找7次。</p>
+<p>有同学说了，你这不对，看似查找很少，其实你有一段时间浪费在生成二叉树上了。没错，这就是索引的弊端了，索引需要在修改数据的时候额外付出一点代价，但是这个代价是值得的。</p>
+<p>上面的也看到了，有的二叉查找树可能严重偏枝，也就是聚集在左子树或者右子树，排序树退化成一个链表，这样我们查找起来时间复杂度还是O(n)（如果根结点是最大值，我们需要查找最小值）。</p>
+<p>也就是9 8 7 6 5 4 3 2 1 这一串数字生成的二叉查找树。</p>
+<p>于是为了解决该问题，大佬们又设计了一个新的树形数据结构：B树，也叫做平衡树。</p>
+<h3 id="平衡树又是啥？"><a href="#平衡树又是啥？" class="headerlink" title="平衡树又是啥？"></a>平衡树又是啥？</h3><p>平衡树具有一下特性：</p>
 <ol>
-<li><p>修饰方法（静态方法也可以）</p>
- <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account from, Account to, <span class="keyword">float</span> num)</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            from.setBalance(from.getBalance() - num);</span><br><span class="line">            to.setBalance(to.getBalance() + num);</span><br><span class="line">            System.out.println(from.getBalance());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<li>具有查找树的所有特性</li>
+<li>每个结点的左子树和右子树高度差小于等于1</li>
+</ol>
+<p>这两个特性使得二叉平衡树的查找的时间复杂度总能保持最坏情况下为O(log n)，实现二叉平衡树的算法也有很多：AVL、红黑树、Treap等等，希望大家自行查询学习。</p>
+<p><strong>B树：</strong>B树属于平衡树的一种，又称为平衡多路查找树。我们来认识一下B树，《算法导论》中是这样写的B树是为磁盘或其他存取的辅助存储设备而设计的一种平衡搜索树，类似于红黑树，但是在降低磁盘I/O的操作树方面更好一点，许多数据库系统使用B树或者B树的变种来存储信息。</p>
+<p>《算法导论》中给出了B树的精确定义：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
+<p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
+<p>怎么构建B树请大家自行查询，因为不画图听不太明白，画图我又太懒……</p>
+<p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
+<p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
+<p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
+<p>我们看到定义中B树是每个结点都存放多个数据，B+树不同，B+树只有叶子结点存放数据，并且任何非叶子结点都会在叶结点上再次出现一次，更加丧心病狂的是把所有叶子结点从左到右链接了起来（所有叶子结点自成链表），所以我们扫描的时候只需要从第一个叶子扫描到最后一个叶子结点就行了，显然这种更适合数据库索引。</p>
+<p>除此之外，B树的查找性能不稳定，有可能在第一个结点就查找到了，也有可能</p>
+<p>来一张B+树的图：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>总结一下奇葩的B+树特点：</p>
+<ol>
+<li>父结点存放的元素都在子结点重复出现，因为此特性，叶子结点就包含了整个树的所有元素</li>
+<li>叶子结点从左到右依次链接，形成一个有序链表</li>
+</ol>
+<h2 id="B-树查找演示"><a href="#B-树查找演示" class="headerlink" title="B+树查找演示"></a>B+树查找演示</h2><p>上面简单讲了B+树的特性，回想一下我们对MySQL中索引的概况——排好序的快速查找数据结构。</p>
+<p>我们来演示一下B+树怎么快速的查找：</p>
+<p>假设我们查找数据：3</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
+<p>从根结点开始，3&lt;8，我们要查找的数据在最左子树，也就是258所在的结点。3&gt;2并且3&lt;5，我们要查找的数据在中间结点，也就是3,5所在的结点，随后成功找到3。</p>
+<p>有同学要问了，如果我查找的数字是5呢？5可是在258中出现过的数字，我怎么知道是在中间结点还是最右结点呢？同学们，你们有没有发现B+树父结点的数字会被继承给子结点，并且继承过来的数字对于子结点来说都是最大的值。当然不一定每个B+树都是继承最大的值，也可以是最小结点。所以查找的元素在非叶子结点的时候需要我们查找该值左边的子树。</p>
+<p>接下来给大家演示一个神奇的操作，区间查找。</p>
+<p>假如我们需要查找一个区间的值：6~11</p>
+<p>我们会先查找6，然后按照叶子结点之间的链表，往下遍历到13（不确定有没有多个11，遍历到13停止）。</p>
+<p>相对于B树来说，B+树作为数据库索引真是太好用了。</p>
+<h2 id="索引实战"><a href="#索引实战" class="headerlink" title="索引实战"></a>索引实战</h2><p>讲了那么多理论知识，终于到实战了。、</p>
+<p>建表之后创建索引使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE INDEX index_name ON my_table(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE my_table ADD [UNIQUE] INDEX index_name(column_name);</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>建表的时候使用命令：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE mytable(  </span><br><span class="line">    ID INT NOT NULL,   </span><br><span class="line">    username VARCHAR(16) NOT NULL,  </span><br><span class="line">    INDEX [indexName] (username(length))  </span><br><span class="line">); </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>我们需要注意两个事情：</p>
+<ol>
+<li>创建索引需要占用额外的空间，请保持磁盘空间充足</li>
+<li>创建索引会对全表加锁，请在业务空闲时间创建，最好在程序规划的情况下创建</li>
+</ol>
+<p>删除索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">DROP INDEX my_index ON tablename；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>或者</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE table_name DROP INDEX index_name;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>查看索引：</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SHOW INDEX FROM my_table;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="什么时候该用索引"><a href="#什么时候该用索引" class="headerlink" title="什么时候该用索引"></a>什么时候该用索引</h3><p>上面我们学习过了，索引需要额外的插入时间，但是可以大幅度减缓我们的查询和排序时间。</p>
+<p>由此我们可以得知，在频繁读取的业务表上增加索引，对频繁作为限定条件的列增加索引。除此之外，还有一些建立索引的建议：</p>
+<ol>
+<li>主键自动建立唯一索引</li>
+<li>WHERE和ORDER BY经常用到的列增加索引</li>
+<li>高并发情况下建立索引</li>
+<li>经常用于聚合函数的列建立索引</li>
+</ol>
+<p>对几乎不读或者少读的表、修改增加删除频繁的表酌情考虑不加索引。总结如下：</p>
+<ol>
+<li>经常修改删除的不建立索引</li>
+<li>有大量重复列的不建立索引</li>
+<li>表记录太少的不建立索引，不到1000索引无关紧要</li>
+</ol>
+<h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
+<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。注意，这个索引是自动建立的。</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>唯一索引：</strong> 建立索引的列不允许重复值，但是可以为空</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD UNIQUE index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>普通索引：</strong>看名字就知道，没有任何限制的普通索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>全文索引：</strong>使用大文本对象的列需要用到的索引</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD FULLTEXT INDEX ft_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p><strong>组合索引：</strong>利用多个列进行组合构建的索引，列中不允许有空值</p>
+<blockquote>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;)；</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>值得注意的是组合索引，其遵循最左原则，也就是我们创建的这个索引不是col1、col2、col3随便都能使用的，这个索引只有查询为col1、col1+col2、col1+col2+col3才能使用，而像col2+col1就不能使用，一定要记住查询的顺序。</p>
+<p>并且，使用组合索引的时候可能导致因为列名太长而导致索引的key太大，影响性能，在允许的情况下使用col1(n)来取列名的前n个字符。</p>
+<h3 id="索引失效！"><a href="#索引失效！" class="headerlink" title="索引失效！?"></a>索引失效！?</h3><p>没错，你建立了索引不是就万事大吉了，很有可能你写的SQL不规范导致你的索引失效，也就是白建立索引了。</p>
+<p>有以下几种情况需要注意：</p>
+<ol>
+<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
 </li>
-<li><p>修饰代码块</p>
- <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account from, Account to, <span class="keyword">float</span> num)</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">                from.setBalance(from.getBalance() - num);</span><br><span class="line">                to.setBalance(to.getBalance() + num);</span><br><span class="line">                System.out.println(from.getBalance());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
+<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
+</li>
+<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
+</li>
+<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
+</li>
+<li><p>WHERE中索引列有计算、使用了函数会导致索引失效</p>
+</li>
+<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
+</li>
+<li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
+</li>
+<li><p>MySQL觉得全表扫描更快的时候</p>
 </li>
 </ol>
-<p><strong>synchronized关键字的参数：</strong>可能有的同学发现了修饰代码块的时候一个很奇怪的写法——synchronized (this){}，为什么要把当前对象传进去呢？其实这里用什么对象都可以，该对象作为锁的存在。代码块就像是一个房间，这个对象就是门的存在，这个神奇的门有一个规则，谁想进就能进，但是一次只能进一个人，第二个人想进只能等前面的人出来才能进。</p>
-<p>再来看一段代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SyncThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">//this作为锁</span></span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + i);</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SyncThread s1 = <span class="keyword">new</span> SyncThread();</span><br><span class="line">        SyncThread s2 = <span class="keyword">new</span> SyncThread();</span><br><span class="line">        Thread thread1 = <span class="keyword">new</span> Thread(s1, <span class="string">"Thread1"</span>);</span><br><span class="line">        Thread thread2 = <span class="keyword">new</span> Thread(s2, <span class="string">"Thread2"</span>);</span><br><span class="line">        thread1.start();</span><br><span class="line">        thread2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>run方法中的就不用看了，主要看main方法中怎么创建线程的，这里创建了两个SyncThread的对象，分别传入两个线程中。现在问大家一个问题：this对象是谁的对象？很明显是SyncThread的对象。再一个问题，现在堆内存中有几个SyncThread的对象？new了两个SyncThread()，当然是两个对象。那么最后一个问题，现在堆内存中有几把锁？我们使用this -&gt; SyncThread的对象作为锁，现在堆内存中有两个对象，那么就有两把锁。Thread1运行的是s1中的同步代码块，获取的是s1这把锁，然后美滋滋的执行。Thread2运行的是s2对象的同步代码块，获取的是s2这把锁，也可以美滋滋的执行。也就是说s1和s2是两个厕所，并没有同步的需要。</p>
-<p>为什么会这样呢？因为Thread1和Thread2操作的不是一个对象呀！那么为什么要进行同步呢？</p>
-<p>假设我在淘宝上买东西，在我付款的时候所有的人都没有办法付款，假设我付款需要一秒钟，淘宝一个小时才能成交3600单。你这不是并发，你这是恶霸呀！真正正确的方法是锁住我这个对象，</p>
-<p>给大家一个恶霸写法：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(ThreadTest<span class="class">.<span class="keyword">class</span>)</span>&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>还有一个写法是：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Lock</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Lock lock = <span class="keyword">new</span> Lock();</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(lock)&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这样写是因为锁对象越小，性能越高（我没试过，但是理论上可行，大家也都是这么做的）。这里定义内部类的时候使用了static关键字，原因是保证Lock是唯一的（class只加载一次，在一个虚拟机中一个类只有一个class），也就是我吃饭的时候，全世界人都得端着碗看我吃，等我吃完之后，下一个拿到锁的人才能继续吃饭。</p>
-<p>只锁住对象的可以这样写：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Lock</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> Lock lock;</span><br><span class="line">    </span><br><span class="line">    ThreadTest()&#123;</span><br><span class="line">        lock = <span class="keyword">new</span> Lock();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(lock)&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>总结一下：</p>
-<p>synchronized可以用于方法和代码块，也就是分为四种情况：</p>
-<ol>
-<li>作用于普通方法</li>
-<li>作用于静态方法</li>
-<li>作用于代码块，参数为对象</li>
-<li>作用于代码块，参数为.class</li>
-</ol>
-<p>其中1和3是等价的，它们锁住的都是对象，也就是同一个对象的代码块不能被多个线程执行。2和4是等价的（锁的范围），也就是同一个类的代码块不能被多线程访问。</p>
-<h2 id="单例模式中的synchronized"><a href="#单例模式中的synchronized" class="headerlink" title="单例模式中的synchronized"></a>单例模式中的synchronized</h2><p>单例模式我们都会写，随手就写出来</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">            System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>很简单的就写出来了，这个时候我们测试一下，看是不是只有一个实例。</p>
-<p>写一个测试类：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                Singleton.getInstance();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                Singleton.getInstance();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>即创建两个线程获取instance，理论来说我们应该只获取的一个单例，也就是单例只被创建一次。然而多次运行（看运气）之后，出现了</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200721190048019.png" alt="image-20200721190048019"></p>
-<p>也就是对象被创建了两边，我们的单例不是单例了！</p>
-<p>相信经过上面的学习，你已经知道了为什么会发生这种情况，并且明白如何避免这种情况，无非就是在进入判断之前进行加锁。</p>
-<p>代码改成</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    Object lock = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">            System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>经过多次运行之后，再也没有出现创建两个单例对象的情况出生了。</p>
-<p>然而，还有一个隐藏的问题，代码的速度因为锁的原因降低了，每次我们调用get方法的时候都要加锁、判断、返回值，大大降低了我们的速度。</p>
-<p>所以有一种双重校验锁的方式来解决这个问题：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton<span class="class">.<span class="keyword">class</span>) </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">                    System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> instance;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>利用这种双重校验锁的功能，我们可以得到一个性能和安全兼顾的单例模式。当然，还有一种方式更为简单，那就是枚举模式</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> Singleton &#123;  </span><br><span class="line">    INSTANCE;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">whateverMethod</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="线程安全问题新解决"><a href="#线程安全问题新解决" class="headerlink" title="线程安全问题新解决"></a>线程安全问题新解决</h2><p>现在我们来分析之前那个问题，使用synchronized为什么会出现负值。</p>
-<p>忘记什么问题了吗？代码重新放一下：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>结果也重放一下：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717111502567.png" alt="image-20200717111502567"></p>
-<p>经过上面的学习，我们知道同步代码块并没有对while进行同步，也就是线程2和线程3在while循环后等待线程1执行同步代码块中的操作，等到线程1执行完毕，线程2/3才能继续进行操作。</p>
-<p>例子中，也就是当i=1的时候，Thread-0和Thread-2（如果此时Thread-1也去读取i值的话，那就会有-2出现了）同时完成while的判断，然后Thread-2抢到了锁，进入代码块执行，Thread-0在代码块外等候。Thread-2执行完毕后，i值由1减为0并且Thread-2离开代码块释放锁，随后Thread-0抢到锁之后执行代码块，读取i值为0，将i-1（此时没有判断了，判断在同步代码块外面）的值写入内存。</p>
-<p>那么怎么改善这种情况？</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                	<span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//为了看的更清楚一点</span></span><br><span class="line">                                Thread.sleep(<span class="number">10</span>);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果把代码改成这样，我们来看一下结果：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200721230845508.png" alt="image-20200721230845508"></p>
-<p>结果发现Thread从99到0完全输出，也就是while循环完全是谁先抢到锁谁做完，继续改进：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> thread;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        <span class="keyword">if</span> (t.i&gt;<span class="number">0</span>)&#123;</span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//为了看的更清楚一点</span></span><br><span class="line">                                Thread.sleep(<span class="number">10</span>);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                            t.i--;</span><br><span class="line">                            System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>没错，又是双重校验锁的方式来实现了，只不过这个是为了保证线程的安全，而非性能。</p>
+<p>这里放一张官方的图，关于索引失效的案例可以看我下一篇博客。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
 <ol>
-<li>JMM有哪些区域</li>
-<li>线程安全是什么</li>
-<li>synchronized关键字的作用</li>
-<li>synchronized关键字的四种用法</li>
-<li>性能与安全兼顾的双重校验锁</li>
+<li>什么是索引？为什么要有索引？</li>
+<li>从二叉排序树到B树再到B+树</li>
+<li>MySQL索引的原理是什么？</li>
+<li>B+树怎么查找范围和单行</li>
+<li>索引的使用环境</li>
+<li>MySQL有哪些索引</li>
+<li>索引失效的场景</li>
 </ol>
-<p>synchronized只是很简单的提了一下用法，更深层次的讲解我会抽时间写出来，最近要准备找工作了。祝我好运啦！</p>
+<p>这两天身体有点不舒服，博客写的质量肯定不如从前。过段时间要去上海找工作了，在家沉淀蛮久了。MySQL的相关知识还是继续更下去，再更个两篇就准备去上海了，祝我好运。</p>
 ]]></content>
       <categories>
-        <category>多线程</category>
+        <category>MySQL</category>
       </categories>
       <tags>
-        <tag>多线程</tag>
-        <tag>线程安全</tag>
-        <tag>synchronized</tag>
+        <tag>MySQL</tag>
+        <tag>索引</tag>
+        <tag>数据库</tag>
       </tags>
   </entry>
   <entry>
@@ -1385,6 +1353,39 @@
       <tags>
         <tag>IO</tag>
         <tag>Java</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>记一次面试：上海元恒信息技术有限公司</title>
+    <url>/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E4%BF%A1%E6%81%AF%E6%8A%80%E6%9C%AF%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/</url>
+    <content><![CDATA[<p><strong>INTRO:</strong> 昨天上午去参加了一场面试，晚上通知我入职，能够感受到公司的诚意，已经决定入职。</p>
+<a id="more"></a>
+
+<p>来到上海后面试的第一家公司，去的路上还下了点小雨。</p>
+<p>到公司之后，先让做笔试，笔试的试题这里因为公司机密问题不能透漏，只能告诉大家试题的比较接近实践，覆盖面也比较广。笔试给了大概有四十分钟的时间，我只写了一半的题目（一共四道题，从里面任选三个解答，我写了两道）可能是好久不写字，字体有点丑，好在面试官没有在乎这个……</p>
+<p>总结一下为什么时间不够的问题：</p>
+<ol>
+<li>前面填写个人信息花费了时间</li>
+<li>前面两道题写的过于详细，挤压了后面的答题时间</li>
+</ol>
+<p>写完题之后，被带到一个座位上。</p>
+<p>过来一个面试官，是一个和善的老大哥。面试官问了一些关于技术上的问题，主要问的都是Java基础的知识，比如面向对象、Java集合框架、Java多线程相关的知识。</p>
+<p>前面问的时候还是很紧张的，后面进入状态之后感觉自己回答的还可以。</p>
+<p>后面问到线程相关的知识，面试官很诧异问我回答的还可以，怎么最后一题没有写（最后一题是线程相关的问题），我说时间不太够了。面试官又重新给我十分钟的时间让我写这道题，当时有点慌张，虽然这个题有思路，但是毕竟自己没有用代码实现过，可能会出现代码格式乱七八糟的问题。博主在之前就因为这个被挂过面试……</p>
+<p>面试官很善解人意的跟我说，你在这写，我不看着你，你别紧张。我的妈呀，从来没见过这么和善的面试官，相信大家都有过被老师盯着，然后一个字写不出来的情况，面试官这个举动让我直接对这家公司的好感拉满。</p>
+<p>大概十分钟过去，面试官在旁边跟我说，不需要局限语法，思路写出来就行了，当时已经写的差不多了，还差几行代码。可能因为自己字比较大，留的空隙不是很够，还有重要代码没有写出来。</p>
+<p>后面又来了一个老哥面试我，能够认出来他就是公司创始人孙总。孙总来了之后，之前面试我的面试官又问了一些关于数据库的问题，说实话，两个面试官同时问我还是有点紧张的……甚至很多基础上的东西都没答上来，背地里狠狠抽自己两巴掌，同时感觉自己的心态需要进行一些调整。</p>
+<p>除了数据库之外，又问了一些关于我之前实习的问题，让我讲了一些实际上的例子。后来孙总问了我一个问题为什么要用HDFS，当时我说了一下自己的理解，孙总都说不对。今天早上我睡得迷迷糊糊的时候，我才突然想起来，答案就在HDFS名字里面呀！Hadoop<strong>分布式</strong>文件系统嘛！HDFS可以做高可用，文件系统不行。HDFS遵循计算向数据移动，文件系统不行。HDFS可以做并行运算，关系型数据库不行。</p>
+<p>后面又问了一些关于我自己认知的问题，比如我有什么优点等等。</p>
+<p>面试过后，我提了两个问题，一个就是问公司的性质，是不是一个外包公司，孙总跟我解释，他们是做一个技术承包的公司，有的公司没有技术部门，他们作为一个技术承包的存在，并且与合作公司长期合作进行产品迭代。另一个问题就是我恳请两个面试官对我进行点评，其中一个面试官说我有点紧张，被无情看穿了…话说面试当然有点紧张了，还是面对技术大佬的情况下，生怕自己哪个技术理解错了就被大佬心底无情嘲笑。后面孙总点评的比较多，点出了我的一个缺点，比如对于自己的职业评估会出现偏差，这点我是承认的，之前因为没有对自己的职业进行正确评估，自己浪费了很多精力和时间去学习自己不感兴趣的方向。不过也不能说是浪费时间，毕竟走过不适合的道路才知道什么是自己想要的。</p>
+<p>这次面试的体验非常好，两个面试官和善不说，主要是愿意引导你一步一步阐述自己的知识架构，并且尽量保持面试者轻松心态、发挥面试者的真实水平。</p>
+<p>今天要做的事情比较多，办理入职需要的材料，注销之前不用的招商银行卡，办理入职需要的工商银行卡。把握最后一天的自由人身份，以后时间可就不多了。碰巧上海该死不死的下雨了，但是总不能放朋友鸽子吧，去城隍庙的计划大概率泡汤了，希望晚上不要下了，还想再品尝一下外滩的夜景。</p>
+]]></content>
+      <categories>
+        <category>面试</category>
+      </categories>
+      <tags>
+        <tag>面试</tag>
       </tags>
   </entry>
   <entry>
@@ -1670,269 +1671,268 @@
       </tags>
   </entry>
   <entry>
-    <title>MySQL冲冲冲：MySQL索引的从认识到实战</title>
-    <url>/MySQL%E5%86%B2%E5%86%B2%E5%86%B2%EF%BC%9AMySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%8E%E8%AE%A4%E8%AF%86%E5%88%B0%E5%AE%9E%E6%88%98/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>MySQL是我们常用的关系型数据库，小巧灵活。在开发过程中，当我们的数据量超过一定程度的时候，就需要我们使用索引来优化查询和排序的速度，这篇文章就来尽量全面的讲一讲索引。</p>
+    <title>让人头疼的多线程：synchronized暴打线程安全</title>
+    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9Asynchronized%E6%9A%B4%E6%89%93%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>线程安全是什么？我就头铁不加锁。性能是什么？我每个方法都来一个synchronized。这篇博客synchronized原理入手，教你怎样合理利用synchronized写出性能和安全兼顾的代码。</p>
 <a id="more"></a>
 
-<h2 id="索引简介"><a href="#索引简介" class="headerlink" title="索引简介"></a>索引简介</h2><p> MySQL官方给索引一个定义——帮助MySQL高效获取数据的数据结构。注意，这里得到了一个关键字，索引是一种数据结构，一种帮助我们更快速获取数据的数据结构。</p>
-<p>我们初学MySQL时并没有使用索引，查找数据需要全表扫描，也就是从第一行开始扫描，直到最后一行。如果我们表里数据非常大，上千万行的数据，全表扫面会特别慢，这个时候如果有一个“目录”来帮助我们快速定位数据就好了。</p>
-<p>这个时候就出现了索引，我们可以把索引对比成新华字典的目录，目录是不是一种独特的数据结构呢？目录由拼音+页数组成，通过对应拼音的页数我们可以快速找到想要的数据。如果没有目录，我们需要从a开始，一个字一个字的对比（MySQL这本字典可不是按规律排的），直到找到我们想查的字，如果想查a还好，想查zhouxx可咋整。</p>
-<p>通过这些描述我们知道了，WHERE条件后面需要查找的关键字可以使用索引。还有什么可以使用索引优化呢？索引还有一个别名：排好序的快速查找数据结构。所以我们在ORDER BY中也可以使用索引来优化结果。</p>
-<h2 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h2><p>上面讲过了索引是一种数据结构，所以索引是什么样的数据结构呢？     </p>
-<p>先说结果：索引是一种排序树，这里有同学就开始疑惑了，排序树是个嘛玩意？</p>
-<h3 id="排序树是啥？"><a href="#排序树是啥？" class="headerlink" title="排序树是啥？"></a>排序树是啥？</h3><p>排序树又称搜索树、查找树。看名字就知道这个和索引高度相似，索引是干嘛的？一种排好序的快速查找数据结构。这两个东西就对应起来了，那么我们只要学好了这个什么排序树就能更加接近MySQL索引的底层原理了。</p>
-<p>讲排序树之前需要大家知道一些储备知识：树的数据结构特点、二叉树的相关知识。</p>
-<p>排序树的叉不确定，本文就按照最简单的二叉排序树来讲，核心知识都是相同的，多叉排序树大家自己类比就好。</p>
-<p>先说二叉排序树的定义：</p>
+<h2 id="JVM的内存模型——JMM"><a href="#JVM的内存模型——JMM" class="headerlink" title="JVM的内存模型——JMM"></a>JVM的内存模型——JMM</h2><p>说到线程安全，就不得不讲讲Java中JVM的内存模型JMM（Java Momory Model）。</p>
+<p>JMM定义了Java在内存中运行的模式，简单来说就是Java在运行时的数据在内存中以怎样的形式存放。</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200720101831305.png" alt="image-20200720101831305"></p>
+<p>上面这张图来来自《深入理解Java虚拟机》，上面的区域可以分为两类，线程共享的区域和线程隔离的区域。线程隔离的区域是线程私有的，其他线程不能访问该区域中的数据，自然也就不存在线程安全的问题。</p>
+<p>这里简单对这些内存区域做个介绍：</p>
+<p><strong>方法区：</strong> 方法区和堆内存一样，是线程共享的区域，它用来存储类信息、静态变量、常量（常量也是静态变量呀）等数据。（有没有发现都是类相关的？）</p>
+<p><strong>堆内存：</strong>一般来说，堆内存是JVM中最大的一块内存。这一大块内存只用来存放对象，几乎所有的对象都会被分配在堆内存中，记住这个几乎，并不是所有的对象都会分配在堆内存中，根据逃逸分析等优化技术会让对象分配在栈内存或者进行标量替换（只要机制不是所有的对象都分配在堆内存就行了，逃逸分析和标量替换有机会再讲）。</p>
+<p>堆内存被所有线程所共享，存储数据重要+线程共享就导致了堆内存的线程安全问题是我们重点关注的内容。</p>
+<p><strong>虚拟机栈：</strong>通常我们称之为栈内存，栈内存描述的是Java方法的内存模型，一个方法运行时就会创建一个栈帧，栈帧中存放方法的各种信息，例如局部变量表、程序出口。相信大家都知道栈这个数据结构，方法执行的时候会入栈，方法执行完毕会出栈。（想一想main线程中栈内存的栈底是不是永远是main方法？其他线程中栈内存的栈底是不是永远是run方法？）</p>
+<p> <strong>程序计数器：</strong> 这块区域比较小，它用来作为当前代码所运行的行号指示。字节码解释器通过改变程序计数器的值来选择下一条运行哪条指令，判断、循环、异常处理等等。比如线程进行切换的时候需要保存原线程的程序运行到哪一条指令，所以每个线程都有一个程序计数器来记录运行的行号。</p>
+<p><strong>本地方法栈：</strong> 这个区域和虚拟机栈一样，只不过本地方法栈服务于Native方法（非Java方法，通常是C/C++）。</p>
+<p>这里给一些代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;<span class="comment">//存储在Test的对象中</span></span><br><span class="line">    Object object = <span class="keyword">new</span> Object();<span class="comment">//对象存放在堆内存，地址存放在Test的对象中。</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> ONE = <span class="number">1</span>;<span class="comment">//存放在常量池中，常量池属于方法区</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(Object obj)</span></span>&#123;</span><br><span class="line">        <span class="comment">//obj存放在堆内存中，传进来的是obj地址的副本，这个地址存放在栈内存中</span></span><br><span class="line">        <span class="keyword">this</span>.object = obj;</span><br><span class="line">        Object obj2 = <span class="keyword">new</span> Object();<span class="comment">//在方法中创建的对象存储在堆内存中（不一定），地址存放在方法栈中</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里提一句，在学习编程的时候都听说过两个概念，值传递和引用传递。也许有同学听说过这么一句话，Java中只有值传递，没有引用传递。Java方法的参数为对象时，传进来的是Java对象地址的副本。可能说起来有点难懂，我们看一下代码就明白了。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    Object object = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        obj = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Test t = <span class="keyword">new</span> Test();</span><br><span class="line">        t.test(t.object);</span><br><span class="line">        System.out.println(t.object == <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>思考一下，如果Java中的方法是引用传递，也就是t.object的地址传递进test方法，然后被设置为空值，那么this.object是否就为空了？也就是程序运行结果为true。然而正确的运行结果是true，也就是说，Java传递过去的是一个地址的副本，这个副本相当于Java对象的代言人，你可以通过这个代言人对对象进行操作，但是你把代言人杀了，和原来的对象无关。</p>
+<p>不好意思……扯远了，我们说回来。</p>
+<p>上回书说到Java的内存模型，理解了Java的内存模型才能明白什么样的线程是安全的，什么样的线程是不安全的。</p>
+<h2 id="线程安全问题"><a href="#线程安全问题" class="headerlink" title="线程安全问题"></a>线程安全问题</h2><p>我们先来写一段代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    t.i--;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码逻辑很简单，开启三个线程对类变量i进行减操作，按照我们的想法应该是99-0，没有重复和缺失完整输出。</p>
+<p>然而会出现这种现象：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717105635486.png" alt="image-20200717105635486"></p>
+<p>98出现了两次，并且没有99出现？在我们看来线程中仅仅两条语句，然而对于CPU来说，这两条语句分为四步：</p>
 <ol>
-<li>若左子树不为空，则左子树所有结点的值均小于该结点的值</li>
-<li>若右子树不为空，则右子树所有结点的值均小于该结点的值</li>
-<li>任意结点的左右子树也是二叉排序树</li>
-<li>没有键值相等的结点</li>
+<li>读取i的值到线程私有内存中</li>
+<li>对私有内存中的i值进行修改</li>
+<li>将i值写入到私有内存中</li>
+<li>再次读取i值，并且打印到控制台</li>
 </ol>
-<p>是不是读起来很绕口？</p>
-<p>我们来看一个例子：</p>
-<p>有一串数字——8 6 5 4 7 2 3 1 9，我们怎么生成一个二叉搜索树呢？</p>
-<p>首先取出数字8作为根结点，随后下一个数字为6，比8小，所以我们把6作为8的左结点</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105612632.png" alt="image-20200725105612632"></p>
-<p>再取出一个数字5，比8小，可是8已经有左子结点了，再对比8的左子结点6，比6小，所以我们把数字5放在6的左子结点。同理数字4也是一样，现在树变成了这样：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105533427.png" alt="image-20200725105533427"></p>
-<p>这时来了一个不素之客7，比8小，又比6大，那么我们就把它放到6的右子结点：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105514803.png" alt="image-20200725105514803"></p>
-<p>按照这种从根结点逐步向下扩展，并且遵循小的放左边、大的放右边这个规律，最终生成的树就是二叉搜索树。</p>
-<p>例子中最终生成树为：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725105359707.png" alt="image-20200725105359707"></p>
-<p>好吧，例子举得不好，这个树太丑了……数字是我随便敲的，长成这样我也没办法……</p>
-<p>那重新来一个例子吧，例子二：</p>
-<p>5 6 3 4 7 1 9 2 8</p>
-<p>生成树为：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725110331135.png" alt="image-20200725110331135"></p>
-<p>这个树就好看多了……</p>
-<p>那么这个树有什么作用呢？或者说为什么叫做查找树呢？</p>
-<p>我们使用第二个例子，假设需要查找数字2，从根结点查找开始，比5小，那么我们右边的树（因为排序树右边的都比根结点大）就不看了，只看左边的子树。查找到3，比3小，右边不看。查找到1，比1大，左边不看（虽然左边没结点了），只看右边，查找到2，完成查找。</p>
-<p>一共查找了4次，如果不使用二叉查找树呢？我们需要查找7次。</p>
-<p>有同学说了，你这不对，看似查找很少，其实你有一段时间浪费在生成二叉树上了。没错，这就是索引的弊端了，索引需要在修改数据的时候额外付出一点代价，但是这个代价是值得的。</p>
-<p>上面的也看到了，有的二叉查找树可能严重偏枝，也就是聚集在左子树或者右子树，排序树退化成一个链表，这样我们查找起来时间复杂度还是O(n)（如果根结点是最大值，我们需要查找最小值）。</p>
-<p>也就是9 8 7 6 5 4 3 2 1 这一串数字生成的二叉查找树。</p>
-<p>于是为了解决该问题，大佬们又设计了一个新的树形数据结构：B树，也叫做平衡树。</p>
-<h3 id="平衡树又是啥？"><a href="#平衡树又是啥？" class="headerlink" title="平衡树又是啥？"></a>平衡树又是啥？</h3><p>平衡树具有一下特性：</p>
+<p>那么一定是出现了某种操作，让数字99还未被第四步读取打印的时候就被改写了。例如线程0先读取i值并且进行操作写入，还未进行读取的时候，线程1再次读取i=99值，并且操作写入i=98。随后线程0再次读取i值，读到的是98。</p>
+<p>我们再来看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>与上面的代码没有什么太大变化，只是加了一个很复杂的关键字synchronized，这里先简单说一下它的作用：保护代码块中的代码只会被一个线程执行。</p>
+<p>思考下上面的代码会出现什么结果，能修复之前遇到的问题吗？</p>
+<p>来看一下运行结果：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717111502567.png" alt="image-20200717111502567"></p>
+<p>之前的98重复倒是解决了，可是又出现了一个新的问题——负值。（如果没出现就多运行几次，甚至可能会出现-2）</p>
+<p>还是上面的步骤，很明显上面的原因全是synchronized的锅，下面讲一下这个synchronized究竟是什么。</p>
+<h2 id="synchronized关键字"><a href="#synchronized关键字" class="headerlink" title="synchronized关键字"></a>synchronized关键字</h2><p>synchronized是解决线程安全问题最简单的方法，这个关键字可以保证在方法/代码块运行的时候只有一个线程访问。</p>
+<p>synchronized有两种用法：</p>
 <ol>
-<li>具有查找树的所有特性</li>
-<li>每个结点的左子树和右子树高度差小于等于1</li>
-</ol>
-<p>这两个特性使得二叉平衡树的查找的时间复杂度总能保持最坏情况下为O(log n)，实现二叉平衡树的算法也有很多：AVL、红黑树、Treap等等，希望大家自行查询学习。</p>
-<p><strong>B树：</strong>B树属于平衡树的一种，又称为平衡多路查找树。我们来认识一下B树，《算法导论》中是这样写的B树是为磁盘或其他存取的辅助存储设备而设计的一种平衡搜索树，类似于红黑树，但是在降低磁盘I/O的操作树方面更好一点，许多数据库系统使用B树或者B树的变种来存储信息。</p>
-<p>《算法导论》中给出了B树的精确定义：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725161016276.png" alt="image-20200725161016276"></p>
-<p>看起来是不是挺复杂的，简单来说就是一个结点不止存放一个值，这些值以升序排列（这里翻译真是绝了，非降序……），每个结点都有该结点存储的关键字数+1个子结点，这些子结点中也存储数据，并且不同的子结点存放不同范围的数据，该范围由双亲所存储的值决定。</p>
-<p>怎么构建B树请大家自行查询，因为不画图听不太明白，画图我又太懒……</p>
-<p>给大家推荐一个讲解的比较明白的博客<a href="https://www.jianshu.com/p/cf7dba86c391" target="_blank" rel="noopener">数据结构之B树与B+树</a></p>
-<p>上面讲的是B树，而<strong>MySQL中两个数据引擎默认都是使用的B+树作为索引</strong>。</p>
-<p>B+树和B树有什么不同呢？B+树是B树的进阶版本，两者有何不同呢？</p>
-<p>我们看到定义中B树是每个结点都存放多个数据，B+树不同，B+树只有叶子结点存放数据，并且任何非叶子结点都会在叶结点上再次出现一次，更加丧心病狂的是把所有叶子结点从左到右链接了起来（所有叶子结点自成链表），所以我们扫描的时候只需要从第一个叶子扫描到最后一个叶子结点就行了，显然这种更适合数据库索引。</p>
-<p>除此之外，B树的查找性能不稳定，有可能在第一个结点就查找到了，也有可能</p>
-<p>来一张B+树的图：</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
-<p>总结一下奇葩的B+树特点：</p>
-<ol>
-<li>父结点存放的元素都在子结点重复出现，因为此特性，叶子结点就包含了整个树的所有元素</li>
-<li>叶子结点从左到右依次链接，形成一个有序链表</li>
-</ol>
-<h2 id="B-树查找演示"><a href="#B-树查找演示" class="headerlink" title="B+树查找演示"></a>B+树查找演示</h2><p>上面简单讲了B+树的特性，回想一下我们对MySQL中索引的概况——排好序的快速查找数据结构。</p>
-<p>我们来演示一下B+树怎么快速的查找：</p>
-<p>假设我们查找数据：3</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200725205902444.png" alt="image-20200725205902444"></p>
-<p>从根结点开始，3&lt;8，我们要查找的数据在最左子树，也就是258所在的结点。3&gt;2并且3&lt;5，我们要查找的数据在中间结点，也就是3,5所在的结点，随后成功找到3。</p>
-<p>有同学要问了，如果我查找的数字是5呢？5可是在258中出现过的数字，我怎么知道是在中间结点还是最右结点呢？同学们，你们有没有发现B+树父结点的数字会被继承给子结点，并且继承过来的数字对于子结点来说都是最大的值。当然不一定每个B+树都是继承最大的值，也可以是最小结点。所以查找的元素在非叶子结点的时候需要我们查找该值左边的子树。</p>
-<p>接下来给大家演示一个神奇的操作，区间查找。</p>
-<p>假如我们需要查找一个区间的值：6~11</p>
-<p>我们会先查找6，然后按照叶子结点之间的链表，往下遍历到13（不确定有没有多个11，遍历到13停止）。</p>
-<p>相对于B树来说，B+树作为数据库索引真是太好用了。</p>
-<h2 id="索引实战"><a href="#索引实战" class="headerlink" title="索引实战"></a>索引实战</h2><p>讲了那么多理论知识，终于到实战了。、</p>
-<p>建表之后创建索引使用命令：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE INDEX index_name ON my_table(column_name);</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>或者</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE my_table ADD [UNIQUE] INDEX index_name(column_name);</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>建表的时候使用命令：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE mytable(  </span><br><span class="line">    ID INT NOT NULL,   </span><br><span class="line">    username VARCHAR(16) NOT NULL,  </span><br><span class="line">    INDEX [indexName] (username(length))  </span><br><span class="line">); </span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>我们需要注意两个事情：</p>
-<ol>
-<li>创建索引需要占用额外的空间，请保持磁盘空间充足</li>
-<li>创建索引会对全表加锁，请在业务空闲时间创建，最好在程序规划的情况下创建</li>
-</ol>
-<p>删除索引：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">DROP INDEX my_index ON tablename；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>或者</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE table_name DROP INDEX index_name;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>查看索引：</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SHOW INDEX FROM my_table;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="什么时候该用索引"><a href="#什么时候该用索引" class="headerlink" title="什么时候该用索引"></a>什么时候该用索引</h3><p>上面我们学习过了，索引需要额外的插入时间，但是可以大幅度减缓我们的查询和排序时间。</p>
-<p>由此我们可以得知，在频繁读取的业务表上增加索引，对频繁作为限定条件的列增加索引。除此之外，还有一些建立索引的建议：</p>
-<ol>
-<li>主键自动建立唯一索引</li>
-<li>WHERE和ORDER BY经常用到的列增加索引</li>
-<li>高并发情况下建立索引</li>
-<li>经常用于聚合函数的列建立索引</li>
-</ol>
-<p>对几乎不读或者少读的表、修改增加删除频繁的表酌情考虑不加索引。总结如下：</p>
-<ol>
-<li>经常修改删除的不建立索引</li>
-<li>有大量重复列的不建立索引</li>
-<li>表记录太少的不建立索引，不到1000索引无关紧要</li>
-</ol>
-<h3 id="索引的分类"><a href="#索引的分类" class="headerlink" title="索引的分类"></a>索引的分类</h3><p>常见的索引类型有：</p>
-<p><strong>主键索引：</strong>该索引建立在主键上，称为主索引，不允许空值、不允许重复。注意，这个索引是自动建立的。</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD PRIMARY KEY pk_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>唯一索引：</strong> 建立索引的列不允许重复值，但是可以为空</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD UNIQUE index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>普通索引：</strong>看名字就知道，没有任何限制的普通索引</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>全文索引：</strong>使用大文本对象的列需要用到的索引</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD FULLTEXT INDEX ft_index(&#39;col&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p><strong>组合索引：</strong>利用多个列进行组合构建的索引，列中不允许有空值</p>
-<blockquote>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ALTER TABLE &#39;table_name&#39; ADD INDEX index_name(&#39;col1&#39;,&#39;col2&#39;,&#39;col3&#39;)；</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>值得注意的是组合索引，其遵循最左原则，也就是我们创建的这个索引不是col1、col2、col3随便都能使用的，这个索引只有查询为col1、col1+col2、col1+col2+col3才能使用，而像col2+col1就不能使用，一定要记住查询的顺序。</p>
-<p>并且，使用组合索引的时候可能导致因为列名太长而导致索引的key太大，影响性能，在允许的情况下使用col1(n)来取列名的前n个字符。</p>
-<h3 id="索引失效！"><a href="#索引失效！" class="headerlink" title="索引失效！?"></a>索引失效！?</h3><p>没错，你建立了索引不是就万事大吉了，很有可能你写的SQL不规范导致你的索引失效，也就是白建立索引了。</p>
-<p>有以下几种情况需要注意：</p>
-<ol>
-<li><p>使用OR的时候，必须OR两边都有索引，否则索引失效</p>
+<li><p>修饰方法（静态方法也可以）</p>
+ <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account from, Account to, <span class="keyword">float</span> num)</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            from.setBalance(from.getBalance() - num);</span><br><span class="line">            to.setBalance(to.getBalance() + num);</span><br><span class="line">            System.out.println(from.getBalance());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>组合索引没有遵循最左原则的时候，索引会失效。</p>
-</li>
-<li><p>LIKE以%开头，也就是全文查找，这个时候需要使用全文索引来加快查询速度。</p>
-</li>
-<li><p>需要类型转换，比如VARCHAR少加了双引号，索引就会失效</p>
-</li>
-<li><p>WHERE中索引列有计算、使用了函数会导致索引失效</p>
-</li>
-<li><p>在索引列上使用 IS NULL 或 IS NOT NULL操作。因为索引不会对空值进行索引，所以这个无法使用索引。</p>
-</li>
-<li><p>索引列使用不等于无法使用索引，所以key&lt;&gt;x可以改为key&gt;x OR key&lt;x</p>
-</li>
-<li><p>MySQL觉得全表扫描更快的时候</p>
+<li><p>修饰代码块</p>
+ <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account from, Account to, <span class="keyword">float</span> num)</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable()&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">                from.setBalance(from.getBalance() - num);</span><br><span class="line">                to.setBalance(to.getBalance() + num);</span><br><span class="line">                System.out.println(from.getBalance());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
 </li>
 </ol>
-<p>这里放一张官方的图，关于索引失效的案例可以看我下一篇博客。</p>
-<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200726000540016.png" alt="image-20200726000540016"></p>
+<p><strong>synchronized关键字的参数：</strong>可能有的同学发现了修饰代码块的时候一个很奇怪的写法——synchronized (this){}，为什么要把当前对象传进去呢？其实这里用什么对象都可以，该对象作为锁的存在。代码块就像是一个房间，这个对象就是门的存在，这个神奇的门有一个规则，谁想进就能进，但是一次只能进一个人，第二个人想进只能等前面的人出来才能进。</p>
+<p>再来看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SyncThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">//this作为锁</span></span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + i);</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SyncThread s1 = <span class="keyword">new</span> SyncThread();</span><br><span class="line">        SyncThread s2 = <span class="keyword">new</span> SyncThread();</span><br><span class="line">        Thread thread1 = <span class="keyword">new</span> Thread(s1, <span class="string">"Thread1"</span>);</span><br><span class="line">        Thread thread2 = <span class="keyword">new</span> Thread(s2, <span class="string">"Thread2"</span>);</span><br><span class="line">        thread1.start();</span><br><span class="line">        thread2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>run方法中的就不用看了，主要看main方法中怎么创建线程的，这里创建了两个SyncThread的对象，分别传入两个线程中。现在问大家一个问题：this对象是谁的对象？很明显是SyncThread的对象。再一个问题，现在堆内存中有几个SyncThread的对象？new了两个SyncThread()，当然是两个对象。那么最后一个问题，现在堆内存中有几把锁？我们使用this -&gt; SyncThread的对象作为锁，现在堆内存中有两个对象，那么就有两把锁。Thread1运行的是s1中的同步代码块，获取的是s1这把锁，然后美滋滋的执行。Thread2运行的是s2对象的同步代码块，获取的是s2这把锁，也可以美滋滋的执行。也就是说s1和s2是两个厕所，并没有同步的需要。</p>
+<p>为什么会这样呢？因为Thread1和Thread2操作的不是一个对象呀！那么为什么要进行同步呢？</p>
+<p>假设我在淘宝上买东西，在我付款的时候所有的人都没有办法付款，假设我付款需要一秒钟，淘宝一个小时才能成交3600单。你这不是并发，你这是恶霸呀！真正正确的方法是锁住我这个对象，</p>
+<p>给大家一个恶霸写法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(ThreadTest<span class="class">.<span class="keyword">class</span>)</span>&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>还有一个写法是：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Lock</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Lock lock = <span class="keyword">new</span> Lock();</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(lock)&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样写是因为锁对象越小，性能越高（我没试过，但是理论上可行，大家也都是这么做的）。这里定义内部类的时候使用了static关键字，原因是保证Lock是唯一的（class只加载一次，在一个虚拟机中一个类只有一个class），也就是我吃饭的时候，全世界人都得端着碗看我吃，等我吃完之后，下一个拿到锁的人才能继续吃饭。</p>
+<p>只锁住对象的可以这样写：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Lock</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> Lock lock;</span><br><span class="line">    </span><br><span class="line">    ThreadTest()&#123;</span><br><span class="line">        lock = <span class="keyword">new</span> Lock();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(lock)&#123;</span><br><span class="line">            <span class="comment">//吃饭</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>总结一下：</p>
+<p>synchronized可以用于方法和代码块，也就是分为四种情况：</p>
+<ol>
+<li>作用于普通方法</li>
+<li>作用于静态方法</li>
+<li>作用于代码块，参数为对象</li>
+<li>作用于代码块，参数为.class</li>
+</ol>
+<p>其中1和3是等价的，它们锁住的都是对象，也就是同一个对象的代码块不能被多个线程执行。2和4是等价的（锁的范围），也就是同一个类的代码块不能被多线程访问。</p>
+<h2 id="单例模式中的synchronized"><a href="#单例模式中的synchronized" class="headerlink" title="单例模式中的synchronized"></a>单例模式中的synchronized</h2><p>单例模式我们都会写，随手就写出来</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">            System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>很简单的就写出来了，这个时候我们测试一下，看是不是只有一个实例。</p>
+<p>写一个测试类：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                Singleton.getInstance();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                Singleton.getInstance();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>即创建两个线程获取instance，理论来说我们应该只获取的一个单例，也就是单例只被创建一次。然而多次运行（看运气）之后，出现了</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200721190048019.png" alt="image-20200721190048019"></p>
+<p>也就是对象被创建了两边，我们的单例不是单例了！</p>
+<p>相信经过上面的学习，你已经知道了为什么会发生这种情况，并且明白如何避免这种情况，无非就是在进入判断之前进行加锁。</p>
+<p>代码改成</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    Object lock = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">            System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>经过多次运行之后，再也没有出现创建两个单例对象的情况出生了。</p>
+<p>然而，还有一个隐藏的问题，代码的速度因为锁的原因降低了，每次我们调用get方法的时候都要加锁、判断、返回值，大大降低了我们的速度。</p>
+<p>所以有一种双重校验锁的方式来解决这个问题：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton<span class="class">.<span class="keyword">class</span>) </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">                    System.out.println(<span class="string">"单例被创建"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> instance;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>利用这种双重校验锁的功能，我们可以得到一个性能和安全兼顾的单例模式。当然，还有一种方式更为简单，那就是枚举模式</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> Singleton &#123;  </span><br><span class="line">    INSTANCE;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">whateverMethod</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="线程安全问题新解决"><a href="#线程安全问题新解决" class="headerlink" title="线程安全问题新解决"></a>线程安全问题新解决</h2><p>现在我们来分析之前那个问题，使用synchronized为什么会出现负值。</p>
+<p>忘记什么问题了吗？代码重新放一下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>结果也重放一下：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717111502567.png" alt="image-20200717111502567"></p>
+<p>经过上面的学习，我们知道同步代码块并没有对while进行同步，也就是线程2和线程3在while循环后等待线程1执行同步代码块中的操作，等到线程1执行完毕，线程2/3才能继续进行操作。</p>
+<p>例子中，也就是当i=1的时候，Thread-0和Thread-2（如果此时Thread-1也去读取i值的话，那就会有-2出现了）同时完成while的判断，然后Thread-2抢到了锁，进入代码块执行，Thread-0在代码块外等候。Thread-2执行完毕后，i值由1减为0并且Thread-2离开代码块释放锁，随后Thread-0抢到锁之后执行代码块，读取i值为0，将i-1（此时没有判断了，判断在同步代码块外面）的值写入内存。</p>
+<p>那么怎么改善这种情况？</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                	<span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//为了看的更清楚一点</span></span><br><span class="line">                                Thread.sleep(<span class="number">10</span>);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                        t.i--;</span><br><span class="line">                        System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果把代码改成这样，我们来看一下结果：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200721230845508.png" alt="image-20200721230845508"></p>
+<p>结果发现Thread从99到0完全输出，也就是while循环完全是谁先抢到锁谁做完，继续改进：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> thread;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> i = <span class="number">100</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread0 t = <span class="keyword">new</span> Thread0();</span><br><span class="line">        Runnable r = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">while</span> (t.i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                        <span class="keyword">if</span> (t.i&gt;<span class="number">0</span>)&#123;</span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//为了看的更清楚一点</span></span><br><span class="line">                                Thread.sleep(<span class="number">10</span>);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                            t.i--;</span><br><span class="line">                            System.out.println(Thread.currentThread().getName() + <span class="string">":"</span> + t.i);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">        <span class="keyword">new</span> Thread(r).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>没错，又是双重校验锁的方式来实现了，只不过这个是为了保证线程的安全，而非性能。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了什么：</p>
 <ol>
-<li>什么是索引？为什么要有索引？</li>
-<li>从二叉排序树到B树再到B+树</li>
-<li>MySQL索引的原理是什么？</li>
-<li>B+树怎么查找范围和单行</li>
-<li>索引的使用环境</li>
-<li>MySQL有哪些索引</li>
-<li>索引失效的场景</li>
+<li>JMM有哪些区域</li>
+<li>线程安全是什么</li>
+<li>synchronized关键字的作用</li>
+<li>synchronized关键字的四种用法</li>
+<li>性能与安全兼顾的双重校验锁</li>
 </ol>
-<p>这两天身体有点不舒服，博客写的质量肯定不如从前。过段时间要去上海找工作了，在家沉淀蛮久了。MySQL的相关知识还是继续更下去，再更个两篇就准备去上海了，祝我好运。</p>
+<p>synchronized只是很简单的提了一下用法，更深层次的讲解我会抽时间写出来，最近要准备找工作了。祝我好运啦！</p>
 ]]></content>
       <categories>
-        <category>MySQL</category>
+        <category>多线程</category>
       </categories>
       <tags>
-        <tag>MySQL</tag>
-        <tag>索引</tag>
-        <tag>数据库</tag>
+        <tag>多线程</tag>
+        <tag>线程安全</tag>
+        <tag>synchronized</tag>
       </tags>
   </entry>
   <entry>
-    <title>小鲸鱼Docker：Docker入门</title>
-    <url>/%E5%B0%8F%E9%B2%B8%E9%B1%BCDocker%EF%BC%9ADocker%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>记一次面试：上海元恒信息技术有限公司</title>
-    <url>/%E8%AE%B0%E4%B8%80%E6%AC%A1%E9%9D%A2%E8%AF%95%EF%BC%9A%E4%B8%8A%E6%B5%B7%E5%85%83%E6%81%92%E4%BF%A1%E6%81%AF%E6%8A%80%E6%9C%AF%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8/</url>
-    <content><![CDATA[<p><strong>INTRO:</strong> 昨天上午去参加了一场面试，晚上通知我入职，能够感受到公司的诚意，已经决定入职。</p>
+    <title>让人头疼的多线程：CRUD用得到多线程？</title>
+    <url>/%E8%AE%A9%E4%BA%BA%E5%A4%B4%E7%96%BC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9ACRUD%E7%94%A8%E5%BE%97%E5%88%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%9F/</url>
+    <content><![CDATA[<p><strong>INTRO：</strong>多线程这个东西让人又爱又恨，爱的是它解决了CPU偷懒的问题，恨的是它复杂、知识多、日常难接触到。这三点交杂起来，真的是让人觉得脑壳疼，这篇博客就解决你的心头病，带你从头撸下多线程。</p>
 <a id="more"></a>
 
-<p>来到上海后面试的第一家公司，去的路上还下了点小雨。</p>
-<p>到公司之后，先让做笔试，笔试的试题这里因为公司机密问题不能透漏，只能告诉大家试题的比较接近实践，覆盖面也比较广。笔试给了大概有四十分钟的时间，我只写了一半的题目（一共四道题，从里面任选三个解答，我写了两道）可能是好久不写字，字体有点丑，好在面试官没有在乎这个……</p>
-<p>总结一下为什么时间不够的问题：</p>
+<h2 id="嘛是多线程？"><a href="#嘛是多线程？" class="headerlink" title="嘛是多线程？"></a>嘛是多线程？</h2><p>线程：程序执行的最小单位。线程线程，一条线上的程序，我们把程序的执行当作一条线，从头到尾，中间可能有打结（循环结构），分叉（判断结构），但是并不影响我们从线头撸到线尾。</p>
+<p>上面是单线程的情况，多线程就是有很多根线，CPU走走这条线，跑跑那条线，不专注在一棵树上吊死。</p>
+<p>举一个生活中的例子，某妹子是一个专业养备胎二十年的老女神。她为了维护自己的女神形象无法让这些备胎见面，所以她只能敷衍过一个备胎之后再敷衍另一个备胎。某一天早晨，备胎A发消息说给女神买了早餐，一分钟后备胎B给女神发了早安，女神是应该先吃完A的早餐之后再回复备胎B，还是先回复备胎B的早安然后继续等A的早餐呢？</p>
+<p>答案很明显是先把B的早安回了，毕竟闲着也是闲着不是？这个例子中女神就是CPU，两个备胎就是线程，是否知道线程的作用了呢？如果这个例子是单线程的，就会出现这种情况：备胎A给女神买了早餐，女神开始等待备胎A的早餐，一分钟后备胎B给女神发了早安，女神并没有看到，因为女神呆呆望着门口等待A的早餐，更别说回复了。</p>
+<p>多线程的意义就在于此，把CPU等待IO的时间充分利用起来，CPU等待IO的时候，就给它安排计算，无情压榨。</p>
+<p>既然多线程这么香，为什么不到处都用多线程呢，两个表达式就开一个线程岂不是速度飞起？</p>
+<p>多线程还是有缺点的：</p>
 <ol>
-<li>前面填写个人信息花费了时间</li>
-<li>前面两道题写的过于详细，挤压了后面的答题时间</li>
+<li>线程的切换需要消耗系统资源。</li>
+<li>线程的创建需要消耗大量系统资源。</li>
+<li>线程之间的安全问题比较复杂。</li>
+<li>多线程有可能发生死锁。</li>
+<li>线程会占用额外的内存空间。</li>
 </ol>
-<p>写完题之后，被带到一个座位上。</p>
-<p>过来一个面试官，是一个和善的老大哥。面试官问了一些关于技术上的问题，主要问的都是Java基础的知识，比如面向对象、Java集合框架、Java多线程相关的知识。</p>
-<p>前面问的时候还是很紧张的，后面进入状态之后感觉自己回答的还可以。</p>
-<p>后面问到线程相关的知识，面试官很诧异问我回答的还可以，怎么最后一题没有写（最后一题是线程相关的问题），我说时间不太够了。面试官又重新给我十分钟的时间让我写这道题，当时有点慌张，虽然这个题有思路，但是毕竟自己没有用代码实现过，可能会出现代码格式乱七八糟的问题。博主在之前就因为这个被挂过面试……</p>
-<p>面试官很善解人意的跟我说，你在这写，我不看着你，你别紧张。我的妈呀，从来没见过这么和善的面试官，相信大家都有过被老师盯着，然后一个字写不出来的情况，面试官这个举动让我直接对这家公司的好感拉满。</p>
-<p>大概十分钟过去，面试官在旁边跟我说，不需要局限语法，思路写出来就行了，当时已经写的差不多了，还差几行代码。可能因为自己字比较大，留的空隙不是很够，还有重要代码没有写出来。</p>
-<p>后面又来了一个老哥面试我，能够认出来他就是公司创始人孙总。孙总来了之后，之前面试我的面试官又问了一些关于数据库的问题，说实话，两个面试官同时问我还是有点紧张的……甚至很多基础上的东西都没答上来，背地里狠狠抽自己两巴掌，同时感觉自己的心态需要进行一些调整。</p>
-<p>除了数据库之外，又问了一些关于我之前实习的问题，让我讲了一些实际上的例子。后来孙总问了我一个问题为什么要用HDFS，当时我说了一下自己的理解，孙总都说不对。今天早上我睡得迷迷糊糊的时候，我才突然想起来，答案就在HDFS名字里面呀！Hadoop<strong>分布式</strong>文件系统嘛！HDFS可以做高可用，文件系统不行。HDFS遵循计算向数据移动，文件系统不行。HDFS可以做并行运算，关系型数据库不行。</p>
-<p>后面又问了一些关于我自己认知的问题，比如我有什么优点等等。</p>
-<p>面试过后，我提了两个问题，一个就是问公司的性质，是不是一个外包公司，孙总跟我解释，他们是做一个技术承包的公司，有的公司没有技术部门，他们作为一个技术承包的存在，并且与合作公司长期合作进行产品迭代。另一个问题就是我恳请两个面试官对我进行点评，其中一个面试官说我有点紧张，被无情看穿了…话说面试当然有点紧张了，还是面对技术大佬的情况下，生怕自己哪个技术理解错了就被大佬心底无情嘲笑。后面孙总点评的比较多，点出了我的一个缺点，比如对于自己的职业评估会出现偏差，这点我是承认的，之前因为没有对自己的职业进行正确评估，自己浪费了很多精力和时间去学习自己不感兴趣的方向。不过也不能说是浪费时间，毕竟走过不适合的道路才知道什么是自己想要的。</p>
-<p>这次面试的体验非常好，两个面试官和善不说，主要是愿意引导你一步一步阐述自己的知识架构，并且尽量保持面试者轻松心态、发挥面试者的真实水平。</p>
-<p>今天要做的事情比较多，办理入职需要的材料，注销之前不用的招商银行卡，办理入职需要的工商银行卡。把握最后一天的自由人身份，以后时间可就不多了。碰巧上海该死不死的下雨了，但是总不能放朋友鸽子吧，去城隍庙的计划大概率泡汤了，希望晚上不要下了，还想再品尝一下外滩的夜景。</p>
-]]></content>
-      <categories>
-        <category>面试</category>
-      </categories>
-      <tags>
-        <tag>面试</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>分布式即时聊天解决方案</title>
-    <url>/%E5%88%86%E5%B8%83%E5%BC%8F%E5%8D%B3%E6%97%B6%E8%81%8A%E5%A4%A9%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
-    <content><![CDATA[<p><strong>INTRO：</strong>Clidoo项目中用到了即时聊天功能，但是在上线的过程中遇到了很多的问题，这里抛出这些问题，并且给出我不太成熟的解决方案。主要提出的问题有：</p>
-<ol>
-<li>websocket连接池和用户多地登录解决方案。</li>
-<li>EOFException出现原因及解决方案。</li>
-<li>分布式服务器消息同步解决方案。</li>
-</ol>
-<a id="more"></a>
+<p>这些缺点有些是可以避免的，能否避免、怎样避免就是我们为什么要学习多线程技术，也是多线程技术复杂的原因，因为它必须解决这么多的多线程缺陷。</p>
+<h2 id="CRUD用得到多线程？"><a href="#CRUD用得到多线程？" class="headerlink" title="CRUD用得到多线程？"></a>CRUD用得到多线程？</h2><p>有同学要问了，我开发的项目都是用的Spring，无非就是增删改查，哪里用得到多线程嘛。</p>
+<p>我们来看一段代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserInfo <span class="title">getUserInfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户id查询用户信息</span></span><br><span class="line">        <span class="keyword">return</span> userInfo;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> OrderInfo <span class="title">getOrderinfo</span><span class="params">(String userId)</span></span>&#123;</span><br><span class="line">        <span class="comment">//根据用户Id查询该用户的订单信息</span></span><br><span class="line">        <span class="keyword">return</span> orderInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h2 id="websocket连接池"><a href="#websocket连接池" class="headerlink" title="websocket连接池"></a>websocket连接池</h2><p>首先客朵使用了ConcurrentHashMap作为连接池，userId作为Key，session作为value，但是问题随之而来，当用户多地登录的时候，后登录的用户会挤掉先登录的用户。导致先登录的用户无法正常收发消息。</p>
-<p>这里有两种方案：</p>
+<p>假设我们有一个界面需要调用这两个Service层方法，也就是某一Controller调用了这两个方法，并且将查询到的用户信息和订单信息打包成一个JSON字符串，而服务器架构是这样的：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717123728495.png" alt="image-20200717123728495"></p>
+<p>静态服务器做负载均衡，接收用户请求，动态服务器（Tomcat）集群用处理请求进行运算，数据库服务器存储数据。</p>
+<p>如果不使用多线程，那么两个方法顺序执行，是这样的步骤：</p>
 <ol>
-<li>允许元素重复的、线程安全的<strong>CopyOnWriteArrayList</strong>作为连接池，但是在发送消息是需要从头进行遍历，导致性能下降，在并发量超过一定值的时候就会导致发送缓慢，每次发送的时间复杂度都是O(n)。</li>
-<li>仍旧使用<strong>ConcurrentHashMap</strong>作为连接池，userId作为key，但是value需要使用<strong>List</strong>，该List中存放userId相同的Session。这种方案相较于方案一来说速度更快，但是对内存的消耗略大于方案一，并且实现起来也稍微复杂一点。</li>
+<li>静态服务器接收到用户请求</li>
+<li>静态服务器转发请求给动态服务器</li>
+<li>动态服务器处理请求，先调用getUserInfo()方法向数据库服务器查询数据</li>
+<li>数据返回到动态服务器，动态服务器调用getOrderInfo()方法向数据库服务器查询数据</li>
+<li>数据解析成JSON字符串数据给静态服务器</li>
 </ol>
-<h2 id="EOFException出现原因及解决方案。"><a href="#EOFException出现原因及解决方案。" class="headerlink" title="EOFException出现原因及解决方案。"></a>EOFException出现原因及解决方案。</h2><p>其次在开发过程中每次链接三分钟就会出现EOFException，随后断开连接，最后定位到是nginx负载均衡对长时间无数据交互做了限制，阿里云默认为1分钟断开连接。为了保证用户长时间五交互不断开，所以加入了心跳检测机制，Clidoo项目是由前端进行心跳检测的，很多复杂的逻辑都由前端执行。</p>
-<p>前端执行：前端使用定时器发送心跳包，如果超过n个心跳包没有收到回复，就选择重连。具体的实现逻辑可以去询问前端 @杨弋。</p>
-<p>后端需要对心跳检测进行及时的回复确认。这里前端发送的东西和回复的东西没有特殊要求，前后端协调好就可以。</p>
-<h2 id="分布式服务器消息同步解决方案"><a href="#分布式服务器消息同步解决方案" class="headerlink" title="分布式服务器消息同步解决方案"></a>分布式服务器消息同步解决方案</h2><p>由于web socket 使用Session进行传递消息，Session存储在内存中，那么就会出现一种情况，用户A给用户B发送消息，该消息经过负载均衡分配到了服务器B来处理该请求，假如用户B连接web socket的session在服务器B上，那么就不会有异常发生，可以正常收发消息。但是，如果用户B连接的服务器是A服务器，那么对于服务器B来说，用户B是不在线的。这条消息就不能及时发送给用户B。</p>
-<p>为了解决分布式服务器消息同步的问题，这里提供两种方案：</p>
+<p>观察第4-5步，动态服务器调用getUserInfo方法之后需要向数据库服务请求数据，此时CPU进入闲置状态，因为CPU在等待数据库服务器返回数据，假设动态服务器到数据库服务器需要0.5s，那么这0.5s中大概有0.45s都是在浪费CPU。</p>
+<p>使用多线程就不一样了，动态服务器向数据库服务器查询UserInfo数据的要求之后，该线程继续等待数据的返回，而是另一线程则紧接着发送查询OrderInfo数据的请求，并且自己等待数据的返回。（没错，这个叫做异步）</p>
+<p>悄咪咪地说一句，Spring针对这种异步情况提供了一个注解——@Async，有时间讲一讲。</p>
+<h2 id="创建多线程"><a href="#创建多线程" class="headerlink" title="创建多线程"></a>创建多线程</h2><p>学习多线程的第一步当然是创建几个多线程玩玩啦！</p>
+<p>创建多线程有两种方式：</p>
+<p>继承Thread并且重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread0().start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实现Runnable接口重写run方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Thread0</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"blooog.top"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Thread0()).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最终还是要把Runnable类传递到Thread中，Runnable也就图一乐，真要用线程还是Thread。既然如此为什么要使用Runnable呢？因为Java不支持多继承，一个类只能有一个爹，而且实现Runnable接口更能体现面向接口编程的开发理念。</p>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>通过Thread的源码我们可以得知Java线程一共有六种状态：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> State &#123;</span><br><span class="line">    NEW,</span><br><span class="line">    RUNNABLE,</span><br><span class="line">    BLOCKED,</span><br><span class="line">    WAITING,</span><br><span class="line">    TIMED_WAITING,</span><br><span class="line">    TERMINATED;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">State</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>NEW：新建状态，线程对象刚创建，还没有调用start()方法跑起来。这里提一句，run方法和start方法一定要分清楚，run方法是你告诉计算机打算开启一个新线程运行run方法中的代码，start方法才是开始新线程。</p>
+<p>RUNNABLE：就绪状态，表示线程随时都可以运行，这个状态可能发生在刚调用线程的start方法、sleep方法时间到了，从wait状态被唤醒、CPU正常切换到另一个线程。</p>
+<p>BLOCKED：阻塞状态，表示线程暂时不能运行，处于等待锁的状态，例如运行到synchronized关键字。</p>
+<p>WAITING：等待状态，表示线程当前正在等待另一线程唤醒，通常使用wait()，join()等进入。</p>
+<p>TIMED_WAITING：带时间的等待状态，例如sleep方法，时间到了就自然进入RUNNABLE状态。</p>
+<p>TERMINATED：销毁状态，线程逻辑也就是run()方法执行完毕，不需要再调度该线程。</p>
+<p>用一个图可以表示这六种状态的相互转换：</p>
+<p><img src="https://gitee.com/vanbyz/images/raw/master/img/image-20200717141332216.png" alt="image-20200717141332216"></p>
+<p>可以把这几种状态比作皇帝后宫妃子的状态。</p>
+<p>NEW：选进宫中，进行培训（哪有刚来就被皇上宠幸的）。</p>
+<p>RUNNABLE：随时可以被翻牌子，等待皇上宠幸。</p>
+<p>BLOCKED：被得宠的妃子欺压，打进冷宫，等到得宠的妃子释怀（释放锁）才能继续被皇上宠幸。</p>
+<p>WAITING：不孕不育，除非别的妃子或者来了神医，否则皇上再也不宠幸你了。</p>
+<p>TIMED_WAITING：来大姨妈，时间到了恢复可以被皇上宠幸的状态。</p>
+<p>TERMINATED：完成妃子的终极目标，怀孕了……不用伺候皇上了。</p>
+<p>有一说一，感觉全网没有比这个更加形象的比喻了……但是BLOCKED的比喻不是很符合，凑合看吧。</p>
+<h2 id="线程相关的方法"><a href="#线程相关的方法" class="headerlink" title="线程相关的方法"></a>线程相关的方法</h2><p>讲过了线程状态的切换，下面就需要讲一讲线程之间切换状态所使用的方法了。线程相关的方法按照调用方式可以分为三种，对象方法，该方法属于对象，由对象调用；静态方法，该方法属于Thread类，调用该方法会作用于调用者；Object继承的方法，该方法继承自Object类。</p>
+<h3 id="对象方法"><a href="#对象方法" class="headerlink" title="对象方法"></a>对象方法</h3><p><strong>start()：</strong>这个方法使线程从NEW状态变为RUNNABLE状态</p>
+<p><strong>getState()：</strong>获取线程当前的状态</p>
+<p><strong>interrupt()：</strong>中断当前线程</p>
+<p><strong>join()：</strong>等待指定线程完事才能继续运行，如果使用有参的join()方法的话，就是等指定线程完事或者经过指定毫秒。被插队的线程进入WAITING状态。</p>
+<p>上面是Thread对象的常用方法（其他getter和setter方法就不列出来了）。</p>
+<p>简单说一下interrupt()方法吧。</p>
+<p><strong>中断：</strong>用一把剪刀把线程剪短，不让线程继续进行下去。然而Java中的中断机制并没有剪刀剪线头那么利落。Java中调用interrupt()方法是给线程一个中断标记，具体怎样处理还是要看线程自己，线程觉得自己工作很重要，就不理会中断标志位，而是继续执行下面的语句。</p>
+<p>还有两个名字很像的方法难以区分，interrupted和isInterrupted。interrupted()是个静态方法，返回当前线程的中断状态（不管你是调用哪个线程对象的interrupted()方法，这条语句哪个线程执行就是哪个线程的中断状态），并且清除线程的中断标记。isInterrupted()不是静态方法，返回线程对象的中断状态，不会清除中断标记。</p>
+<p>说到中断，曾经有一个stop()方法可以强制结束线程的生命，后来被弃用了。调用线程对象的stop方法会立刻释放该线程对象的锁和线程资源。例如一个程序在转账过程中被中断，转出成功但是还没转入目标账户，用户钱凭空消失！你永远也不知道调用一个线程的stop()方法时这个线程在干什么。所以现在中断方式由命令中断，改为请求中断，由线程自己决定要不要中断。</p>
+<h3 id="静态方法"><a href="#静态方法" class="headerlink" title="静态方法"></a>静态方法</h3><p><strong>sleep()：</strong>调用该方法的线程会进入TIMED_WAITING状态，等待事件结束之后，自动恢复RUNNABLE状态。</p>
+<p><strong>yield()：</strong>放弃当前的CPU使用权，也就是皇上翻了某妃子的牌子，妃子说皇上您再重新选一次，皇上有可能再次翻该妃子的牌子，也有可能翻其他妃子的牌子。</p>
+<p><strong>interrupted()：</strong> 这个讲过了，请看上面中断部分。</p>
+<p><strong>currentThread()：</strong>获取当前线程的线程对象。例如我们实现Runnable接口的时候，此时当前线程对象是Runnable类型，无法使用上一章节的非静态方法，此时可以调用currentThread()方法获取Thread对象，然后通过对象来调用非静态方法。</p>
+<p><strong>activeCount()：</strong>返回当前线程组存活的线程。</p>
+<h3 id="Object的遗产方法"><a href="#Object的遗产方法" class="headerlink" title="Object的遗产方法"></a>Object的遗产方法</h3><p><strong>wait()：</strong>这个方法是从Object继承过来的，它会让线程释放锁，并且进入WAITING状态。看起来和sleep很相似，后面会详细讲解wait和sleep的区别。</p>
+<p><strong>notify()/notifyAll()：</strong> 这两个方法也是从Object继承过来的，notify方法会唤醒处于wait的线程。</p>
+<p>注意：wait()和notify()都必须放在同步代码块或者同步方法中。</p>
+<h3 id="wait-方法和sleep-方法的区别"><a href="#wait-方法和sleep-方法的区别" class="headerlink" title="wait()方法和sleep()方法的区别"></a>wait()方法和sleep()方法的区别</h3><p>上面我们了解到wait方法和sleep方法都会让线程进入WAITING/TIMED_WAITING状态，两者有以下区别：</p>
 <ol>
-<li>Session共享</li>
-<li>Session同步</li>
+<li>血统不同：wait方法继承自Object，而sleep是Thread类的一个静态方法。</li>
+<li>对待锁的方式不同：sleep不会释放锁，只是把CPU让出来。wait不仅会让出CPU，还会释放锁。</li>
+<li>运行环境不同：sleep在哪都可以运行，wait只能运行于同步代码块/同步方法中</li>
 </ol>
-<p>方案1中的Session共享就是将Session的存储地由内存改为多台机器可以公用的缓存池。方案2中的Session同步就是有新连接的时候，将Session进行copy。</p>
-<p>很明显，方案1是优于方案2的。</p>
-<p>(未完待续……)</p>
+<h2 id="线程的属性"><a href="#线程的属性" class="headerlink" title="线程的属性"></a>线程的属性</h2><p><strong>线程优先级：</strong>在Java中，每个线程都有自己的优先级，并且子类可以继承父类的优先级。可以通过getter和setter方法获取或者设置线程的优先级。Java将线程的优先级分为10个等级，并且提供了三个常量：MIN_PRIORITY=1;MAX_PRIORITY=10;NORM_PRIORITY=5。</p>
+<p>线程调度器准备执行新线程时，会优先选择较高优先级的线程，但是线程优先级依赖于系统。不同的平台可能对线程的优先级处理不同，例如Windows中线程的优先级分为七个等级，而Oracle为Linux提供的JVM没有线程优先级这个概念，所有线程优先级是平等的。</p>
+<p>所以不要过度依赖线程优先级，程序的正确性如果依赖于线程优先级，那么不同的平台可能会出现不同结果。</p>
+<p>另外，低优先级的线程可能一直无法执行，导致低优先级的线程饿死。</p>
+<p><strong>守护线程：</strong> Java中设置了一个标志位——Daemon，这个标志位表示该线程是否是一个守护线程。先来介绍一下守护线程，守护线程唯一的作用就是给其他线程提供服务，例如提供计时功能。</p>
+<p>值得讨论的是守护线程的生命周期，守护线程不是妃子，守护线程是妃子的丫鬟，当所有的妃子都嗝屁了之后，守护线程也会随之嗝屁，因为守护线程没有提供服务的对象了，也就没有存在的必要了。</p>
+<p>这里提醒大家：千万不要让守护线程访问数据库，就像之前说的stop方法一样，你永远不知道守护线程什么时候嗝屁了。</p>
+<p><strong>线程组：</strong> 为了方便管理线程，Java推出了线程组这一概念。Thread的构造方法提供了线程组的参数，传入所在线程组的对象。假设A线程创建了B线程，并且B线程的构造方法没有设置线程组对象，那么默认B线程和A线程同属于一个线程组。</p>
+<p>然而，大家在程序中尽量避免使用线程组。因为Java引入了更好的线程管理集合。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇博客讲了：</p>
+<ol>
+<li>什么是多线程</li>
+<li>多线程关Spring CRUD什么事</li>
+<li>线程的状态和转化</li>
+<li>线程相关的方法</li>
+<li>wait和sleep方法的区别</li>
+<li>线程的属性</li>
+<li>线程优先级好不好使？</li>
+<li>守护线程是个啥？</li>
+</ol>
+<p>多线程的知识还是有点多的，尽管都是很基础的东西，但是以自己的水平写出来还是比较吃力的。这篇博客写了两天，还是有很多知识没有提及，比如多线程中的异常处理机制。有时间的话再另写一篇博客补充上去吧。</p>
 ]]></content>
       <categories>
-        <category>work log</category>
+        <category>多线程</category>
       </categories>
       <tags>
-        <tag>SpringBoot</tag>
-        <tag>message</tag>
+        <tag>多线程</tag>
+        <tag>并发</tag>
       </tags>
   </entry>
 </search>
